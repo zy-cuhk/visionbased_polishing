@@ -96,7 +96,7 @@ class VisonControl():
     """ read data from yaml, here it temporary uses the list exist"""
     def get_instrinc_param(self):
         data = numpy.array(
-            [468.022437, 0.000000, 329.063542, 0.000000, 467.144374, 255.369939, 0.000000, 0.000000, 1.000000])
+            [895.957338, 0.000000, 333.621431, 0.000000, 895.348321, 241.448886, 0.000000, 0.000000, 1.000000])
         instrinc_param = data.reshape((3, 3))
        # print(instrinc_param)
         return instrinc_param

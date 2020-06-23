@@ -27,7 +27,9 @@ class DetectSturctureLine:
         self.resuv=[]
         self.z_dstar=z_dstar
         self.a_dstar = a_dstar
+        # camera jiaoju: keyi ziji she, fanwei: 
         self.f=0.4705510
+
         self.pu=self.f/468.022437#476.437121#f/kx
         self.pv=self.f/467.144374
         self.centra_uv=[329,255]
