@@ -387,7 +387,7 @@ def main():
     tool_velocity_sub=rospy.Subscriber("/tool_velocity", TwistStamped, tool_get.Ur_tool_velocity_callback)
 
     netf_reader = NetfData()
-    netf_sub = rospy.Subscriber("/netft_data", WrenchStamped, netf_reader.callback)
+    netf_sub = rospy.Subscriber("/robotiq_ft_wrench", WrenchStamped, netf_reader.callback)
 
     z_impedance_error_pub = rospy.Publisher("/z_impedance_error_info", Float64, queue_size=10)
     y_impedance_error_pub = rospy.Publisher("/y_impedance_error_info", Float64, queue_size=10)
