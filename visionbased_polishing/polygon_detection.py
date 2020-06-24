@@ -28,18 +28,18 @@ class DetectSturctureLine:
         self.z_dstar=z_dstar
         self.a_dstar = a_dstar
         # camera jiaoju: keyi ziji she, fanwei: 
-        self.f=0.4705510
+        self.f=0.6245768
 
-        self.pu=self.f/468.022437#476.437121#f/kx
-        self.pv=self.f/467.144374
-        self.centra_uv=[329,255]
+        self.pu=self.f/624.576#476.437121#f/kx
+        self.pv=self.f/625.9805
+        self.centra_uv=[305,255]
         self.flag=0
     def callback(self,data):
         try:
             video_capture=self.bridge.imgmsg_to_cv2(data,"bgr8")
             self.rgb_image = video_capture.copy()
         except CvBridgeError as e:
-            print e
+            print(e)
 
     # 计算欧式距离
     def cal_distance(self,point1, point2):

@@ -9,25 +9,29 @@ from pykdl_utils.kdl_parser import kdl_tree_from_urdf_model
 from pykdl_utils.kdl_kinematics import KDLKinematics
 #import cv2
 import rospy
-import yaml,os
+import yaml,os,sys
 # from ar_track_alvar_msgs.msg import AlvarMarkers
 from std_msgs.msg import String
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
 from geometry_msgs.msg import WrenchStamped,TwistStamped
-
-import frompitoangle
-from ur5_kinematics import Kinematic
-from hand_in_eye import *
-from trans_methods import *
-from get_arpose_from_ar import *
-from ur5_pose_get import *
 from ur5_planning.msg import uv
-from uv_sub_node import *
-from structure_point_xdydzd_sub import *
-from structure_point_xnynan_sub import *
-from impedance_netf_data_get import *
-from ur_tool_velocity_sub import *
+
+o_path="/data/ros/yue_ws_201903/src/visionbased_polishing"
+# print(o_path)
+sys.path.append(o_path) 
+
+import scripts_arm.frompitoangle
+from scripts_arm.ur5_kinematics import Kinematic
+from scripts_arm.hand_in_eye import *
+from scripts_arm.trans_methods import *
+from scripts_arm.get_arpose_from_ar import *
+from scripts_arm.ur5_pose_get import *
+from scripts_arm.uv_sub_node import *
+from scripts_arm.structure_point_xdydzd_sub import *
+from scripts_arm.structure_point_xnynan_sub import *
+from scripts_arm.impedance_netf_data_get import *
+from scripts_arm.ur_tool_velocity_sub import *
 
 """
 withforce control,just cartesian control with trejactory palnning in retangle,and use structure line with z depth,x depth,y depth
@@ -125,7 +129,7 @@ class VisonControl():
     def vis2jac1(self,uv,z):
         cam=self.get_cam_data()
         rh0=[0.0000032,0.0000032]
-        camf=0.4705510#0.6240429#m
+        camf=0.6240429#m
         kx = cam['kx']
         ky = cam['ky']
         #--------------sgl-------------
@@ -144,7 +148,7 @@ class VisonControl():
     def vis2jac(self,uv,z):
         cam=self.get_cam_data()
         rh0=[0.0000032,0.0000032]
-        camf=0.4705510#0.6240429#m
+        camf=0.6240429#m
         kx = cam['kx']
         ky = cam['ky']
         #--------------sgl-------------
@@ -351,15 +355,14 @@ def main():
     ace=50
     vel=0.1
     urt=0
-    ratet=30
+    ratet=5
     netf_zero = [0.0,0.0,0.0]#3.5#[]
     p0=VisonControl(filename,0,urdfname,netf_zero)
 
-    lamdaf=[-0.001/2,-0.001/2,-0.001/2]#
-    #2get uv from ar
-    # ar_reader = arReader()
-    # ar_sub = rospy.Subscriber("/ar_pose_marker", AlvarMarkers, ar_reader.callback)
+    # the original parameter is shown as follows
+    # lamdaf=[-0.001/2,-0.001/2,-0.001/2]#
 
+    lamdaf=[0.001/2,0.001/2,0.001/2]
     ur_reader = Urposition()
     ur_sub = rospy.Subscriber("/joint_states", JointState, ur_reader.callback)
 
@@ -368,7 +371,6 @@ def main():
     z_error_pub = rospy.Publisher("/feature_z_error", Float64, queue_size=10)
     z_depth_pub = rospy.Publisher("/camera_depth", Float64, queue_size=10)
     now_uv_pub = rospy.Publisher("/nowuv_info", uv, queue_size=10)
-    #give q to ur3
     ur_pub = rospy.Publisher("/ur_driver/URScript", String, queue_size=10)
 
     structure_xnynan=StructurePointxnynanRead()
@@ -376,7 +378,6 @@ def main():
     yn_sub = rospy.Subscriber("/cross_line_ysubn", Float64, structure_xnynan.structure_point_yn_callback)
     an_sub = rospy.Subscriber("/cross_line_asubn", Float64, structure_xnynan.structure_point_an_callback)
 
-    #get uvlist for circle
     uv_get=UVRead()
     uv_sub=rospy.Subscriber("/camera_uv/uvlist", uv,uv_get.callback)
 
@@ -406,50 +407,57 @@ def main():
             force_list = netf_reader.ave_netf_force_data
             if len(sturucture_point_xn)!=0 and len(sturucture_point_yn)!=0 and len(sturucture_point_an)!=0:
                 q_now = ur_reader.ave_ur_pose
-                if len(xd_get.sturucture_point_xd_buf)!=0 and len(xd_get.sturucture_point_xd_buf)!=0:
-                    xdot = 0.01
-                    ydot = 0.01
+                # if len(xd_get.sturucture_point_xd_buf)!=0 and len(xd_get.sturucture_point_xd_buf)!=0:
 
-                    # xd = marker_zero[0]+xdot*count/30
-                    # print "marker_zero",marker_zero
-                    # print "xd---------",xd
-                    xd=xd_get.sturucture_point_xd_buf[-1]
-                    print "xd=---------",xd
-                    # yd = 0.01
-                    yd=xd_get.sturucture_point_yd_buf[-1]
-                    zd = 0.22
-                    xnynan=[sturucture_point_xn[-1],sturucture_point_yn[-1],sturucture_point_an[-1]]
-                    print "xnynan",xnynan
-                    print force_list
-                    if len(force_list) != 0 and len(tool_get.Ur_tool_velocity_buf)!=0:
-                        print "force sensor z", force_list
-                        netf=[force_list[0],force_list[1],force_list[2]]
-                        # netf_z = force_list[2]
-                        print "netf ", netf
-                        fd=[-27.5,-3.3,1.1]#-1.5#[]
-                        # lamda2=-0.001/2#(0.001)/5
+                xdot = 0.01
+                ydot = 0.01
 
-                        joint_speed,vcc=p0.get_joint_speed(xnynan, xd, yd, zd, q_now, xdot, 0 * ydot, count, netf, fd, lamdaf)
-                        print "joint_speed,vcc\n", joint_speed,vcc
+                # xd = marker_zero[0]+xdot*count/30
+                # print "marker_zero",marker_zero
+                # print "xd---------",xd
+                # xd=xd_get.sturucture_point_xd_buf[-1]
+                xd=338
+                print "xd=---------",xd
+                # yd = 0.01
+                # yd=xd_get.sturucture_point_yd_buf[-1]
+                yd=255
+                zd = 0.15
+                xnynan=[sturucture_point_xn[-1],sturucture_point_yn[-1],sturucture_point_an[-1]]
+                print "xnynan",xnynan
+                print force_list
+                if len(force_list) != 0 and len(tool_get.Ur_tool_velocity_buf)!=0:
+                    print "force sensor z", force_list
+                    netf=[force_list[0],force_list[1],force_list[2]]
+                    # netf_z = force_list[2]
+                    print "netf ", netf
+                    # fd=[-27.5,-3.3,1.1]#-1.5#[]
+                    fd=[-3.15999984741,-1.18000030518,-7.6]
+                    # x: -3.15999984741
+                    # y: -1.18000030518
+                    # z: -7.6000061035
+                    # lamda2=-0.001/2#(0.001)/5
+
+                    joint_speed,vcc=p0.get_joint_speed(xnynan, xd, yd, zd, q_now, xdot, 0 * ydot, count, netf, fd, lamdaf)
+                    print "joint_speed,vcc\n", joint_speed,vcc
 
 
-                        # if len(tool_get.Ur_tool_velocity_buf)!=0:
-                        z_impedance_error=tool_get.Ur_tool_velocity_buf[-1][2]-vcc[2]
-                        y_impedance_error = tool_get.Ur_tool_velocity_buf[-1][1] - vcc[1]
-                        x_impedance_error = tool_get.Ur_tool_velocity_buf[-1][0] - vcc[0]
-                        z_impedance_error_pub.publish(z_impedance_error)
-                        y_impedance_error_pub.publish(y_impedance_error)
-                        x_impedance_error_pub.publish(x_impedance_error)
-                        detas = p0.get_feature_error_xyz(xnynan, xd, yd, zd)
+                    # if len(tool_get.Ur_tool_velocity_buf)!=0:
+                    z_impedance_error=tool_get.Ur_tool_velocity_buf[-1][2]-vcc[2]
+                    y_impedance_error = tool_get.Ur_tool_velocity_buf[-1][1] - vcc[1]
+                    x_impedance_error = tool_get.Ur_tool_velocity_buf[-1][0] - vcc[0]
+                    z_impedance_error_pub.publish(z_impedance_error)
+                    y_impedance_error_pub.publish(y_impedance_error)
+                    x_impedance_error_pub.publish(x_impedance_error)
+                    detas = p0.get_feature_error_xyz(xnynan, xd, yd, zd)
 
-                        #get joint speed in ee frame
+                    #get joint speed in ee frame
 
-                        print "##############################################################"
-                        print "deta joint angular---"
-                        detaangular = p0.get_deta_joint_angular(detat, xnynan, xd, yd, zd, q_now, xdot, 0*ydot, count,netf,fd,lamdaf)
-                        print detaangular
-                        print "##############################################################"
-                        count += 0.5
+                    print "##############################################################"
+                    print "deta joint angular---"
+                    detaangular = p0.get_deta_joint_angular(detat, xnynan, xd, yd, zd, q_now, xdot, 0*ydot, count,netf,fd,lamdaf)
+                    print detaangular
+                    print "##############################################################"
+                    count += 0.5
 
                 print "count--------",count
                 x_error_pub.publish(detas[0])

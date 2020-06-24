@@ -17,8 +17,10 @@
     
     <!-- start force sensor    /-->
     <node name="rq_sensor" pkg="robotiq_ft_sensor" type="rq_sensor" output="screen" >
+    <!-- <node name="rq_sensor" pkg="robotiq_ft_sensor" type="rq_sensor"  > -->
     </node>
     <node name="rq_test_sensor" pkg="robotiq_ft_sensor" type="rq_test_sensor" output="screen" >
+    <!-- <node name="rq_test_sensor" pkg="robotiq_ft_sensor" type="rq_test_sensor" > -->
     </node>
 
 

@@ -2,11 +2,18 @@
 # -*- coding: utf-8 -*-
 import time,sys
 import rospy
-from get_arpose_from_ar import *
 from ar_track_alvar_msgs.msg import AlvarMarkers
 from std_msgs.msg import Float64
-from structure_point_xnynan_sub import *
 import math
+
+o_path="/data/ros/yue_ws_201903/src/visionbased_polishing"
+# print(o_path)
+sys.path.append(o_path) 
+
+from scripts_arm.get_arpose_from_ar import *
+from scripts_arm.structure_point_xnynan_sub import *
+
+from visionbased_polishing.msg import uv
 class Sturecuturexdydzdpub():
     def __init__(self,nodename,xdtopicname,ydtopicname,radius):
         self.nodename=nodename
@@ -15,6 +22,7 @@ class Sturecuturexdydzdpub():
         self.radius=radius
         self.cont=10#350
         rospy.init_node(self.nodename)
+        self.desire_pub=rospy.Publisher("/camera_uv/uvlist", uv, queue_size=10)
     def Init_node(self):
         xd_pub = rospy.Publisher(self.xdtopicname, Float64, queue_size=10)
         yd_pub = rospy.Publisher(self.ydtopicname, Float64, queue_size=10)
@@ -44,6 +52,11 @@ def main():
     t=0
     xdot=0.0020
     ydot=0.0023
+    f=0.6245768
+    fx=624.576
+    fy=625.9805
+
+    camera_center=[305,255]
     marker_zero=[-0.0898,-0.097]#[-0.031362,-0.0640801]#[-0.0223,-0.0443]#[ -0.10915,-0.05223]#right
     marker_zero_1=[]#down
     marker_zero_2 = []  # left
@@ -51,6 +64,7 @@ def main():
     xdd=0#right
     ydd=0#down
     flag=0
+    auv=uv()
     while not rospy.is_shutdown():
         # pos_dict = ar_reader.ave_pos_dict
         # print "pos_dict"
@@ -60,10 +74,15 @@ def main():
         try:
             # if len(sturucture_point_xn)!=0 and len(sturucture_point_yn)!=0 and len(sturucture_point_an)!=0:
                 if t<50:#move ur in a line at right
+
                     xd=uv0.get_xd_line(marker_zero,xdot,t)
                     xd_pub.publish(xd)
                     yd_pub.publish(marker_zero[1])
-                    print "Xd-----", xd
+                    uv1=xd/(1/fx)+camera_center[0]
+                    uv2=marker_zero[1]/(1/fy)+camera_center[1]
+                    auv.uvinfo =[uv1,uv2]
+                    uv0.desire_pub.publish(auv)
+                    print("Xd-----", xd)
                     # print "ydd-----", yd
                     print "t-----", t
                     t += 1
@@ -78,9 +97,14 @@ def main():
                 elif t>=50 and t<100:#move ur in a line at down
                     print "second -----------------"
                     xd_pub.publish(marker_zero_1[0])
+                    xd=marker_zero_1[0]
                     print "Xdd-----",marker_zero_1
                     yd = uv0.get_yd_line(marker_zero_1, ydot, (t-50)%50)
                     yd_pub.publish(yd)
+                    uv1=xd/(1/fx)+camera_center[0]
+                    uv2=yd/(1/fy)+camera_center[1]
+                    auv.uvinfo =[uv1,uv2]
+                    uv0.desire_pub.publish(auv)
                     print "ydd-----", yd
                     t += 1
                     print "t-----",t
@@ -94,6 +118,11 @@ def main():
 
                     # yd = uv0.get_yd_line(marker_zero_1, ydot, t)
                     yd_pub.publish(ydd)
+                    yd=ydd
+                    uv1=xd/(1/fx)+camera_center[0]
+                    uv2=yd/(1/fy)+camera_center[1]
+                    auv.uvinfo =[uv1,uv2]
+                    uv0.desire_pub.publish(auv)
                     print "ydd-----", ydd
                     t += 1
                     print "t-----",t
@@ -102,10 +131,16 @@ def main():
                         marker_zero_3=[xd,marker_zero_2[1],0]
                 elif t>=150 and t<200:
                     xd_pub.publish(xdd)
+                    xd=xdd
                     print "Xdd-----",xdd
                     yd = uv0.get_yd_line(marker_zero_3, -ydot, (t-150)%50)
                     yd_pub.publish(yd)
+
                     print "ydd-----", yd
+                    uv1=xd/(1/fx)+camera_center[0]
+                    uv2=yd/(1/fy)+camera_center[1]
+                    auv.uvinfo =[uv1,uv2]
+                    uv0.desire_pub.publish(auv)
                     t += 1
                     print "t-----",t
                 else:
