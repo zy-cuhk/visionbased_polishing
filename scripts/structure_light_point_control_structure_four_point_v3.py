@@ -339,7 +339,7 @@ def main():
     # filename="/data/ros/ur_ws_yue/src/ur5_planning/yaml/cam_500_industry.yaml"
     # urdfname="/data/ros/ur_ws/src/universal_robot/ur_description/urdf/ur5.urdf"
 
-    urdfname="/data/ros/yue_ws_201903/src/visionbased_polishing/urdf/ur5.urdf“
+    urdfname="/data/ros/yue_ws_201903/src/visionbased_polishing/urdf/ur5.urdf"
     filename="/data/ros/yue_ws_201903/src/tcst_pkg/yaml/cam_300_industry_20200518.yaml"
 
     desiruv=[]
@@ -352,7 +352,7 @@ def main():
     vel=0.1
     urt=0
     ratet=30
-    netf_zero = [-28,-2.7,6.1]#3.5#[]
+    netf_zero = [0.0,0.0,0.0]#3.5#[]
     p0=VisonControl(filename,0,urdfname,netf_zero)
 
     lamdaf=[-0.001/2,-0.001/2,-0.001/2]#

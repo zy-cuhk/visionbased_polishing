@@ -63,7 +63,7 @@ def main():
                     xd=uv0.get_xd_line(marker_zero,xdot,t)
                     xd_pub.publish(xd)
                     yd_pub.publish(marker_zero[1])
-                    print "Xd-----",xd
+                    print "Xd-----", xd
                     # print "ydd-----", yd
                     print "t-----", t
                     t += 1
