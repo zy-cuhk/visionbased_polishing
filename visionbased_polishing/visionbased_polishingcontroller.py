@@ -196,6 +196,7 @@ class VisonControl():
         #2,get ee(AX=XB) to camera frame jacabian
         # X=get_ur_X()#numpu array
         XX=[0, 0, 1,1, 0, -1, 0,1, 1, 0, 0,1,0,0,0,1]
+        
         X=numpy.matrix(XX).reshape((4,4))
         ebT=T_06
         #tr2jac
