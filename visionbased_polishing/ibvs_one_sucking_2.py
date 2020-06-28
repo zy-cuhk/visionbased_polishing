@@ -154,6 +154,7 @@ class VisonControl():
         kk=numpy.mat(nowuv).T-numpy.mat(desireuv).T
         #kk=numpy.mat([5,0])
         return kk.reshape((1,2))
+        
     #cam speed (udot,vdot)(xdot,ydot,zdot,wxdot,wydot,wzdot)
     #get camera frame speed,you must change to ee frame
     def get_cam_vdot(self,uvm,z,desireuv,nowuv):
