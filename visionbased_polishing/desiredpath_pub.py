@@ -7,7 +7,6 @@ from std_msgs.msg import Float64
 import math
 
 o_path="/data/ros/yue_ws_201903/src/visionbased_polishing"
-# print(o_path)
 sys.path.append(o_path) 
 
 from scripts_arm.get_arpose_from_ar import *
@@ -20,7 +19,7 @@ class Sturecuturexdydzdpub():
         self.xdtopicname=xdtopicname
         self.ydtopicname = ydtopicname
         self.radius=radius
-        self.cont=10#350
+        self.cont=10
         rospy.init_node(self.nodename)
         self.desire_pub=rospy.Publisher("/camera_uv/uvlist", uv, queue_size=10)
     def Init_node(self):
@@ -38,10 +37,8 @@ class Sturecuturexdydzdpub():
         # return [u,v]
 
 def main():
-
     uv0=Sturecuturexdydzdpub("structure_design_pub","/structure_xd","/structure_yd",150)
-    # ar_reader = arReader()
-    # ar_sub = rospy.Subscriber("/ar_pose_marker", AlvarMarkers, ar_reader.callback)
+
     structure_xnynan=StructurePointxnynanRead()
     xn_sub = rospy.Subscriber("/cross_line_xsubn", Float64, structure_xnynan.structure_point_xn_callback)
     yn_sub = rospy.Subscriber("/cross_line_ysubn", Float64, structure_xnynan.structure_point_yn_callback)

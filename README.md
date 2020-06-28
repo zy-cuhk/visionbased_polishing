@@ -13,3 +13,4 @@ run vision-based controller
 the modifications are shown as follows:
 1. visionbased_polishingcontroller_v1.py is the original version
 2. visionbased_polishingcontroller_v2.py modifies almost all functions except the function of get_joint_speed
+3. visionbased_polishingcontroller_v3.py is the final version on 19:40 pm 20200628
