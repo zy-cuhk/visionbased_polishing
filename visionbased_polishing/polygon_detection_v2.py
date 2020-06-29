@@ -26,10 +26,11 @@ class DetectSturctureLine:
         self.z_dstar=z_dstar
         self.a_dstar = a_dstar
         self.f=0.6245768
-        self.pu=self.f/624.576 #476.437121#f/kx
+        self.pu=self.f/624.576 
         self.pv=self.f/625.9805
         self.centra_uv=[305,255]
         self.flag=0
+
     def callback(self,data):
         try:
             video_capture=self.bridge.imgmsg_to_cv2(data,"bgr8")
@@ -37,15 +38,14 @@ class DetectSturctureLine:
         except CvBridgeError as e:
             print(e)
 
-    # 计算欧式距离
+    "calculate Euler distance"
     def cal_distance(self,point1, point2):
         dis = np.sqrt(np.sum(np.square(point1[0] - point2[0]) + np.square(point1[1] - point2[1])))
         return dis
 
-    # 基于海伦公式计算不规则四边形的面积
+    "calculate area based on helen formula"
     def helen_formula(self,coord):
         coord = np.array(coord).reshape((4, 2))
-        # 计算各边的欧式距离
         dis_01 = self.cal_distance(coord[0], coord[1])
         dis_12 = self.cal_distance(coord[1], coord[2])
         dis_23 = self.cal_distance(coord[2], coord[3])
@@ -56,16 +56,6 @@ class DetectSturctureLine:
         area1 = np.sqrt(p1 * (p1 - dis_01) * (p1 - dis_30) * (p1 - dis_13))
         area2 = np.sqrt(p2 * (p2 - dis_12) * (p2 - dis_23) * (p2 - dis_13))
         return (area1 + area2) / 2
-
-    # 基于向量积计算不规则四边形的面积
-    def vector_product(self,coord):
-        coord = np.array(coord).reshape((4, 2))
-        temp_det = 0
-        for idx in range(3):
-            temp = np.array([coord[idx], coord[idx + 1]])
-            temp_det += np.linalg.det(temp)
-        temp_det += np.linalg.det(np.array([coord[-1], coord[0]]))
-        return temp_det / 4
 
     def get_xnynzn(self,centroid_point,area_inrealtime):
         asubn=self.z_dstar*math.sqrt(self.a_dstar/area_inrealtime)
@@ -91,7 +81,6 @@ class DetectSturctureLine:
             blurred = cv2.GaussianBlur(gray, (11,11), 0)
             thresh = cv2.threshold(blurred, 205, 255, cv2.THRESH_BINARY)[1]
             cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-            # print(cnts)
             
             cnts = imutils.grab_contours(cnts)
             c = max(cnts, key=cv2.contourArea)
@@ -129,7 +118,6 @@ class DetectSturctureLine:
                     self.cross_an_pub.publish(ann)
                 else :
                     ann = self.z_dstar - (an * 100 - int(an * 100)) / 100
-                    # print "self.z_dstar - (an * 100 - int(an * 100)) / 100",self.z_dstar - (an * 100 - int(an * 100)) / 100
                     self.cross_xn_pub.publish(xg*ann)
                     self.cross_yn_pub.publish(yg*ann)
                     self.cross_an_pub.publish(ann)
@@ -161,8 +149,6 @@ class DetectSturctureLine:
                 self.image_pub.publish(self.bridge.cv2_to_imgmsg(rgb_image, "bgr8"))
             except CvBridgeError as e:
                 print e
-    def papers_alog(self,rgb_image):
-        self.process_rgb_image(rgb_image)
 
 def main():
     try:

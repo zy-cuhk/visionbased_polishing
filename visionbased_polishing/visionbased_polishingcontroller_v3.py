@@ -225,7 +225,7 @@ def main():
     xdot = 0.01
     ydot = 0.01
     fd=[0.0,0.0,0.0]
-    # the original parameter is shown as follows
+    # the original parameter is shown as follows: 
     # lamdaf=[-0.001/2,-0.001/2,-0.001/2]#
     lamdaf=[0.001/2,0.001/2,0.001/2]
 
