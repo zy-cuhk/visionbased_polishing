@@ -137,7 +137,6 @@ class DetectSturctureLine:
             print "xn,yn,an",xn,yn,an
 
 
-
 def main():
     try:
         z_dstar=0.22#0.31

@@ -28,3 +28,5 @@ the final version for these py documents are:
 2. py 2: image feature publish
 3. py 3: desired path and image features visualization
 4. py 4: vision based polishing controller
+
+
