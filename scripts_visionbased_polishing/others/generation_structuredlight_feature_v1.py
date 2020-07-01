@@ -9,9 +9,10 @@ from std_msgs.msg import Float64
 import imutils
 import time,math
 import numpy as np
+import yaml,os,sys
 
 
-class DetectSturctureLine():
+class StructurePointxnynanRead():
     def __init__(self,z_dstar,a_dstar):
         self.bridge = CvBridge()
         self.rgb_image=None
@@ -67,11 +68,11 @@ class DetectSturctureLine():
         return (area1 + area2) / 2
 
     def get_xnynzn(self,centroid_point,area_inrealtime):
-        asubn=self.z_dstar*math.sqrt(self.a_dstar/area_inrealtime)
+        z_inrealtime=self.z_dstar*math.sqrt(self.a_dstar/area_inrealtime)
         xg,yg=self.change_uv_to_cartisian(centroid_point)
-        xsubn=asubn*xg
-        ysubn=asubn*yg
-        return [xsubn,ysubn,asubn]
+        x_inrealtime=xg*z_inrealtime
+        y_inrealtime=yg*z_inrealtime
+        return x_inrealtime,y_inrealtime,z_inrealtime
 
     def change_uv_to_cartisian(self,point1):
         x=(point1[0]-self.centra_uv[0])*(self.pu/self.f)
@@ -110,43 +111,65 @@ class DetectSturctureLine():
             x2,y2=self.change_uv_to_cartisian(extRight)
             x3,y3=self.change_uv_to_cartisian(extBot)
             area = self.helen_formula([x0,y0, x1,y1, x2,y2, x3,y3])
-            xn,yn,an=self.get_xnynzn(now_central,area)
-            xg, yg = self.change_uv_to_cartisian(now_central)
-            if self.flag>50:
-                if an <=self.z_dstar:
-                    print "an <=self.z_dstar",an <=self.z_dstar
-                    ann=self.z_dstar-(an*100-int(an*100))/100
-                    self.cross_xn_pub.publish(xg*ann)
-                    self.cross_yn_pub.publish(yg*ann)
-                    self.cross_an_pub.publish(ann)
-                else :
-                    ann = self.z_dstar - (an * 100 - int(an * 100)) / 100
-                    self.cross_xn_pub.publish(xg*ann)
-                    self.cross_yn_pub.publish(yg*ann)
-                    self.cross_an_pub.publish(ann)
-            else:
-                self.cross_xn_pub.publish(xn)
-                self.cross_yn_pub.publish(yn)
-                self.cross_an_pub.publish(an)
-            self.flag+=1
-            print "self.flag",self.flag
-            if self.flag>55:
-                self.flag=55
-            self.cross_area_pub.publish(area)
-            print "xn,yn,an",xn,yn,an
+            x_inrealtime,y_inrealtime,z_inrealtime=self.get_xnynzn(now_central,area)
+            
+            # xg, yg = self.change_uv_to_cartisian(now_central)
+            # if self.flag>50:
+            #     if an <=self.z_dstar:
+            #         print "an <=self.z_dstar",an <=self.z_dstar
+            #         ann=self.z_dstar-(an*100-int(an*100))/100
+            #         self.cross_xn_pub.publish(xg*ann)
+            #         self.cross_yn_pub.publish(yg*ann)
+            #         self.cross_an_pub.publish(ann)
+            #     else:
+            #         ann=self.z_dstar-(an*100-int(an*100))/100
+            #         self.cross_xn_pub.publish(xg*ann)
+            #         self.cross_yn_pub.publish(yg*ann)
+            #         self.cross_an_pub.publish(ann)
+            # else:
+            #     self.cross_xn_pub.publish(xn)
+            #     self.cross_yn_pub.publish(yn)
+            #     self.cross_an_pub.publish(an)
+            # self.flag+=1
+            # print "self.flag",self.flag
+            # if self.flag>55:
+            #     self.flag=55
 
+            self.cross_xn_pub.publish(x_inrealtime)
+            self.cross_yn_pub.publish(y_inrealtime)
+            self.cross_an_pub.publish(z_inrealtime)
+            self.cross_area_pub.publish(area)
+            print "x,y,z in real_time",x_inrealtime,y_inrealtime,z_inrealtime
+            print "the area in real_time",area
+
+            "show the windows"
+            cv2.line(image, extLeft, extTop, [0, 255, 0], 2)
+            cv2.line(image, extLeft, extBot, [0, 255, 0], 2)
+            cv2.line(image, extRight, extTop, [0, 255, 0], 2)
+            cv2.line(image, extRight, extBot, [0, 255, 0], 2)
+            cv2.drawContours(image, [c], -1, (0, 255, 255), 2)
+            cv2.circle(image, extLeft, 10, (0, 0, 255), -1)
+            cv2.circle(image, extRight, 10, (0, 0, 255), -1)
+            cv2.circle(image, extTop, 10, (0, 0, 255), -1)
+            cv2.circle(image, extBot, 10, (0, 0, 255), -1)
+            cv2.circle(image, now_central, 10, (0, 0, 255), -1)
+            # cv2.namedWindow('central_frame_3', cv2.WINDOW_NORMAL)
+            # cv2.imshow('central_frame_3', thresh)
+            cv2.namedWindow('central_frame', cv2.WINDOW_NORMAL)
+            cv2.imshow("central_frame", image)
+            cv2.waitKey(8)
 
 def main():
     try:
-        z_dstar=0.22#0.31
-        a_dstar=0.00616# 0.00997#0.0148#0.00987#0.00678718
-        flag=0
         rospy.init_node("Generation_image_feature")
         rospy.loginfo("Starting generation image features node")
-        k=DetectSturctureLine(z_dstar,a_dstar)
+        flag=0
+        z_dstar=0.22
+        a_dstar=0.0043
+        Generation_image_feature=StructurePointxnynanRead(z_dstar,a_dstar)
         rate = rospy.Rate(1)
         while not rospy.is_shutdown():
-            cen=k.process_rgb_image(k.rgb_image)
+            Generation_image_feature.process_rgb_image(Generation_image_feature.rgb_image)
             rate.sleep()
     except KeyboardInterrupt:
         print "Stopping generation image features node"
