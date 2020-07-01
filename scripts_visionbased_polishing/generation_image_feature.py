@@ -11,7 +11,7 @@ import time,math
 import numpy as np
 
 
-class DetectSturctureLine:
+class DetectSturctureLine():
     def __init__(self,z_dstar,a_dstar):
         self.bridge = CvBridge()
         self.rgb_image=None
@@ -21,10 +21,9 @@ class DetectSturctureLine:
         self.cross_an_pub = rospy.Publisher("/cross_line_asubn", Float64, queue_size=10)
         self.cross_area_pub = rospy.Publisher("/cross_line_area", Float64, queue_size=10)
 
-        self.z_dstar = z_dstar
-        self.a_dstar = a_dstar
-        
         self.f=0.6245768
+        self.z_dstar = z_dstar
+        self.a_dstar = a_dstar        
         self.califilename="/data/ros/yue_ws_201903/src/tcst_pkg/yaml/cam_300_industry_20200518.yaml"
         self.file=open(self.califilename)
         self.yamldata=yaml.load(self.file)
@@ -142,15 +141,15 @@ def main():
         z_dstar=0.22#0.31
         a_dstar=0.00616# 0.00997#0.0148#0.00987#0.00678718
         flag=0
-        rospy.init_node("Detect_Sturcture_Line")
-        rospy.loginfo("Starting DetectSturctureLine node")
+        rospy.init_node("Generation_image_feature")
+        rospy.loginfo("Starting generation image features node")
         k=DetectSturctureLine(z_dstar,a_dstar)
         rate = rospy.Rate(1)
         while not rospy.is_shutdown():
             cen=k.process_rgb_image(k.rgb_image)
             rate.sleep()
     except KeyboardInterrupt:
-        print "Shutting down cv_bridge_test node."
+        print "Stopping generation image features node"
         cv2.destroyAllWindows()
 if __name__=="__main__":
     main()

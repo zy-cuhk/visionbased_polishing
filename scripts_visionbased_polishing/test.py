@@ -10,7 +10,6 @@ sys.path.append(o_path)
 
 from scripts_arm.frompitoangle import *
 
-
 Q9=[1.4794633333333334, -2.17445, -1.3624111111111112, 1.7372922222222222, -1.6854822222222223, 1.5698255555555556]
 display(getangle(Q9))
 
