@@ -26,7 +26,7 @@ class StructurePointxnynanRead():
         self.califilename="/data/ros/yue_ws_201903/src/tcst_pkg/yaml/cam_300_industry_20200518.yaml"
         self.file=open(self.califilename)
         self.yamldata=yaml.load(self.file)
-        self.f = self.yamldata['focal_length']
+        self.f = 0.6245768 # self.yamldata['focal_length']
         self.kx = self.yamldata['camera_matrix']['data'][0]
         self.ky = self.yamldata['camera_matrix']['data'][4]
         self.u0 = self.yamldata['camera_matrix']['data'][2]
@@ -99,7 +99,7 @@ class StructurePointxnynanRead():
             cX = int(M["m10"] / M["m00"])
             cY = int(M["m01"] / M["m00"])
             now_central = (cX, cY)
-            print("the central points is located at:",now_central)
+            # print("the central points is located at:",now_central)
             
             x0,y0=self.change_uv_to_cartisian(extLeft)
             x1,y1=self.change_uv_to_cartisian(extTop)
@@ -112,8 +112,7 @@ class StructurePointxnynanRead():
             self.cross_yn_pub.publish(y_inrealtime)
             self.cross_an_pub.publish(z_inrealtime)
             self.cross_area_pub.publish(area)
-            print "x,y,z in real_time",x_inrealtime,y_inrealtime,z_inrealtime
-            print "the area in real_time",area
+            print "x,y,z,area in real_time",x_inrealtime,y_inrealtime,z_inrealtime, area
 
             "show the windows"
             cv2.line(image, extLeft, extTop, [0, 255, 0], 2)
@@ -135,8 +134,8 @@ def main():
         rospy.init_node("Generation_image_feature")
         rospy.loginfo("Starting generation image features node")
         flag=0
-        z_dstar=0.22
-        a_dstar=0.0043
+        z_dstar=0.20
+        a_dstar=0.0050
         Generation_image_feature=StructurePointxnynanRead(z_dstar,a_dstar)
         rate = rospy.Rate(1)
         while not rospy.is_shutdown():

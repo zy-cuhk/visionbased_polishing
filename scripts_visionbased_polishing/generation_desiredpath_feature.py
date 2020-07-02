@@ -15,13 +15,13 @@ from visionbased_polishing.msg import uv
 class Sturecuturexdydzdpub():
     def __init__(self):
         self.t=0
-        self.udot=1.5
-        self.vdot=1.5
+        self.udot=-3
+        self.vdot=-3
 
         self.califilename="/data/ros/yue_ws_201903/src/tcst_pkg/yaml/cam_300_industry_20200518.yaml"
         self.file=open(self.califilename)
         self.yamldata=yaml.load(self.file)
-        self.f = self.yamldata['focal_length']
+        self.f = 0.6245768 #self.yamldata['focal_length'] 
         self.fx = self.yamldata['camera_matrix']['data'][0]
         self.fy = self.yamldata['camera_matrix']['data'][4]
         self.u0 = self.yamldata['camera_matrix']['data'][2]
@@ -72,7 +72,7 @@ class Sturecuturexdydzdpub():
         x,y = self.change_uv_to_cartisian(uv_info)
         self.xd_pub.publish(x)
         self.yd_pub.publish(y)
-        print "x y n is:",x,y,n
+        print "x y  is:",x,y
         print "uv info is:", uv_info[0], uv_info[1]
 
 def main():
