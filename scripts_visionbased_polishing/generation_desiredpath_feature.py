@@ -18,10 +18,10 @@ class Sturecuturexdydzdpub():
         self.udot=1.5
         self.vdot=1.5
 
-        self.f=0.6245768      
         self.califilename="/data/ros/yue_ws_201903/src/tcst_pkg/yaml/cam_300_industry_20200518.yaml"
         self.file=open(self.califilename)
         self.yamldata=yaml.load(self.file)
+        self.f = self.yamldata['focal_length']
         self.fx = self.yamldata['camera_matrix']['data'][0]
         self.fy = self.yamldata['camera_matrix']['data'][4]
         self.u0 = self.yamldata['camera_matrix']['data'][2]
@@ -29,6 +29,7 @@ class Sturecuturexdydzdpub():
         self.pu=self.f/self.fx
         self.pv=self.f/self.fy
         self.camera_center=[self.u0,self.v0]
+        
         self.auv=uv()
         self.uv_init=[self.u0,self.v0]
 

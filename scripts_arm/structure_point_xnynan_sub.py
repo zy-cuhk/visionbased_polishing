@@ -8,9 +8,7 @@ class StructurePointxnynanRead():
     def __init__(self):
        # self.nodename=nodename
         self.sturucture_point_xn_buf=[]
-
         self.sturucture_point_yn_buf = []
-
         self.sturucture_point_an_buf = []
         self.checknum=0
 
@@ -19,7 +17,6 @@ class StructurePointxnynanRead():
         rospy.init_node("structure_point_node")
         xn_sub = rospy.Subscriber("/cross_line_xsubn", Float64, self.structure_point_xn_callback)
         yn_sub = rospy.Subscriber("/cross_line_ysubn", Float64, self.structure_point_yn_callback)
-
         an_sub = rospy.Subscriber("/cross_line_asubn", Float64, self.structure_point_an_callback)
         return xn_sub,yn_sub,an_sub
     def structure_point_xn_callback(self,msg):

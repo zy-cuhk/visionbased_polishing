@@ -21,24 +21,20 @@ class StructurePointxnynanRead():
         self.cross_an_pub = rospy.Publisher("/cross_line_asubn", Float64, queue_size=10)
         self.cross_area_pub = rospy.Publisher("/cross_line_area", Float64, queue_size=10)
 
-        self.f=0.6245768
         self.z_dstar = z_dstar
         self.a_dstar = a_dstar        
         self.califilename="/data/ros/yue_ws_201903/src/tcst_pkg/yaml/cam_300_industry_20200518.yaml"
         self.file=open(self.califilename)
         self.yamldata=yaml.load(self.file)
+        self.f = self.yamldata['focal_length']
         self.kx = self.yamldata['camera_matrix']['data'][0]
         self.ky = self.yamldata['camera_matrix']['data'][4]
         self.u0 = self.yamldata['camera_matrix']['data'][2]
         self.v0 = self.yamldata['camera_matrix']['data'][5]
-        self.cam = {'kx': self.kx, 'ky': self.ky, "u0": self.u0, "v0": self.v0}
-        self.kx = self.cam['kx']
-        self.ky = self.cam['ky']
         self.pu=self.f/self.kx
         self.pv=self.f/self.ky
-        self.centra_uv=[self.cam['u0'],self.cam['v0']]
+        self.centra_uv=[self.u0,self.v0]
         self.flag=0
-
 
     def callback(self,data):
         try:
