@@ -108,26 +108,27 @@ class VisonControl():
         structure_point_xyadsr=[structure_point_xdsr[-1],structure_point_ydsr[-1],structure_point_adsr[-1]]
         # print "structure_point_xyadsr",structure_point_xyadsr
 
-        # force_list = self.netf_reader.ave_netf_force_data
-        force_list = np.array([0.0,0.0,0.0])
+        force_list = self.netf_reader.ave_netf_force_data
+        # force_list = np.array([0.0,0.0,0.0])
         netf=[force_list[0],force_list[1],force_list[2]]
 
         q_now = self.ur_reader.ave_ur_pose
-        if len(sturucture_point_xnow)!=0 and len(sturucture_point_ynow)!=0 and len(sturucture_point_anow)!=0:
-            if len(structure_point_xdsr)!=0 and len(structure_point_ydsr)!=0:
-                    joint_speed,vcc=self.get_joint_speed(sturucture_point_xyanow,structure_point_xyadsr, q_now, netf)
+        # if len(sturucture_point_xnow)!=0 and len(sturucture_point_ynow)!=0 and len(sturucture_point_anow)!=0:
+        #     if len(structure_point_xdsr)!=0 and len(structure_point_ydsr)!=0:
+        
+        joint_speed,vcc=self.get_joint_speed(sturucture_point_xyanow,structure_point_xyadsr, q_now, netf)
 
-                    detaangle = self.get_deta_joint_angle(sturucture_point_xyanow, structure_point_xyadsr, q_now, netf)
-                    # print "the deta joints angle are:", detaangle
-                    
-                    q_pub_next = self.get_joint_angle(q_now,detaangle)
-                    # print "the published joints angle are:",q_pub_next
+        detaangle = self.get_deta_joint_angle(sturucture_point_xyanow, structure_point_xyadsr, q_now, netf)
+        # print "the deta joints angle are:", detaangle
+        
+        q_pub_next = self.get_joint_angle(q_now,detaangle)
+        # print "the published joints angle are:",q_pub_next
 
-                    ss = "movej([" + str(q_pub_next[0]) + "," + str(q_pub_next[1]) + "," + str(q_pub_next[2]) + "," + str(
-                        q_pub_next[3]) + "," + str(q_pub_next[4]) + "," + str(q_pub_next[5]) + "]," + "a=" + str(self.ace) + "," + "v=" + str(
-                        self.vel) + "," + "t=" + str(self.urt) + ")"
-                    # print("ur5 move joints",ss)
-                    self.ur_pub.publish(ss)                    
+        ss = "movej([" + str(q_pub_next[0]) + "," + str(q_pub_next[1]) + "," + str(q_pub_next[2]) + "," + str(
+            q_pub_next[3]) + "," + str(q_pub_next[4]) + "," + str(q_pub_next[5]) + "]," + "a=" + str(self.ace) + "," + "v=" + str(
+            self.vel) + "," + "t=" + str(self.urt) + ")"
+        # print("ur5 move joints",ss)
+        self.ur_pub.publish(ss)                    
                     
 
     def get_joint_speed(self,sturucture_point_xyanow,structure_point_xyadsr,q,f):
@@ -141,14 +142,19 @@ class VisonControl():
         lamdaf_matrix=numpy.matrix([lamdaf[0],0,0,0,lamdaf[1],0,0,0,lamdaf[2]]).reshape((3,3))
         lamdas=[1.0,1.0,-0.01]
         lamdas_matrix=numpy.matrix([lamdas[0],0,0,0,lamdas[1],0,0,0,lamdas[2]]).reshape((3,3))
+        
         fd=[0.0,0.0,0.0]
         detaf = [f[0]-fd[0],f[1]-fd[1],f[2]-fd[2]]
         detas=self.get_feature_error_xyz(sturucture_point_xyanow,structure_point_xyadsr)
         # print("sturucture_point_xyanow",sturucture_point_xyanow)
         # print("structure_point_xyadsr",structure_point_xyadsr)
         # print("detas",detas)
+        print("f",f)
+        print("fd",fd)
+        print("detaf",detaf)
 
-        vc1=lamdas_matrix*numpy.matrix(detas).T
+        # vc1=lamdas_matrix*numpy.matrix(detas).T
+        vc1=0.0
         vc2=lamdaf_matrix*numpy.matrix(detaf).T
         vc=vc1+vc2
         vcc=[vc.tolist()[0][0],vc.tolist()[1][0],vc.tolist()[2][0],0,0,0]
