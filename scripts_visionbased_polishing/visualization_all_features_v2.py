@@ -58,7 +58,7 @@ class All_features_visualization():
             cX = int(M["m10"] / M["m00"])
             cY = int(M["m01"] / M["m00"])
             now_central = (cX, cY)
-            print("the central points is located at:",now_central)
+            # print("the central points is located at:",now_central)
 
             "draw and publish lines and circles on image"
             # print("extLeft is:",extLeft)
@@ -70,12 +70,12 @@ class All_features_visualization():
             cv2.circle(image, extLeft, self.radius, (0, 0, 255), -1)
             cv2.circle(image, now_central, self.radius, (0, 0, 255), -1)
             design_uv = self.design_uv
-            print("new received uv data:", design_uv)
+            # print("new received uv data:", design_uv)
             # self.real_traj_list.append((int(design_uv[0]), int(design_uv[1])))
             self.real_traj_list.append((int(design_uv[0]),int(design_uv[1])))
-            print("real_traj_list is:",self.real_traj_list)
-            print("the length of real_traj_list is:",len(self.real_traj_list))
-            print("the image number is:",image_num)
+            # print("real_traj_list is:",self.real_traj_list)
+            # print("the length of real_traj_list is:",len(self.real_traj_list))
+            # print("the image number is:",image_num)
             if len(self.real_traj_list)>1:
                 for i in range(0, image_num-1):
                     cv2.line(image, self.real_traj_list[i], self.real_traj_list[i+1], color=(0, 0, 255), thickness=5)

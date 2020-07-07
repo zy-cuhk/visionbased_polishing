@@ -23,7 +23,7 @@ class StructurePointxnynanRead():
 
         self.z_dstar = z_dstar
         self.a_dstar = a_dstar        
-        self.califilename="/data/ros/yue_ws_201903/src/tcst_pkg/yaml/cam_300_industry_20200518.yaml"
+        self.califilename="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing/yaml/cam_300_industry_20200518.yaml"
         self.file=open(self.califilename)
         self.yamldata=yaml.load(self.file)
         self.f = 0.6245768 # self.yamldata['focal_length']
@@ -84,8 +84,18 @@ class StructurePointxnynanRead():
             dilated1 = cv2.dilate(dilated1,kernel1)
             eroded1 = cv2.erode(dilated1,kernel1)
             blurred = cv2.GaussianBlur(gray, (11,11), 0)
-            thresh = cv2.threshold(blurred, 205, 255, cv2.THRESH_BINARY)[1]
-            cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+
+            hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)  # 将读取的BGR转换为HSV
+            lower = np.array([35, 43, 46])  # 所要检测的像素范围
+            upper = np.array([77, 255, 255])  # 此处检测绿色区域
+            mask = cv2.inRange(hsv, lowerb=lower, upperb=upper)
+            cv2.imshow("mask", mask)
+
+            # thresh = cv2.threshold(blurred, 205, 255, cv2.THRESH_BINARY)[1]
+            # thresh = cv2.threshold(blurred, 190, 255, cv2.THRESH_BINARY)[1]
+            # cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+
+            cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
             cnts = imutils.grab_contours(cnts)
             c = max(cnts, key=cv2.contourArea)
 
@@ -99,7 +109,6 @@ class StructurePointxnynanRead():
             cX = int(M["m10"] / M["m00"])
             cY = int(M["m01"] / M["m00"])
             now_central = (cX, cY)
-            # print("the central points is located at:",now_central)
             
             x0,y0=self.change_uv_to_cartisian(extLeft)
             x1,y1=self.change_uv_to_cartisian(extTop)
@@ -112,7 +121,9 @@ class StructurePointxnynanRead():
             self.cross_yn_pub.publish(y_inrealtime)
             self.cross_an_pub.publish(z_inrealtime)
             self.cross_area_pub.publish(area)
-            print "x,y,z,area in real_time",x_inrealtime,y_inrealtime,z_inrealtime, area
+            print "real x,y,z,area is:",x_inrealtime,y_inrealtime,z_inrealtime, area
+            # print("real uv info is:",now_central)
+            rospy.logerr("real uv info is: %s"%str(now_central))
 
             "show the windows"
             cv2.line(image, extLeft, extTop, [0, 255, 0], 2)

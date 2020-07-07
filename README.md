@@ -30,3 +30,34 @@ the final version for these py documents are:
 4. py 4: vision based polishing controller
 
 
+the debugging log of 20200707 is shown as follows:
+roslaunch visionbased_polishing visionbased_polishing_configuration.launch 
+rosrun robotiq_ft_sensor rq_test_sensor
+
+1. rosrun visionbased_polishing fixedpoint_motion.py
+and then ctrl+c
+2. rosrun visionbased_polishing generation_desiredpath_feature.py
+which aims to generate desired paths 
+3. rosrun visionbased_polishing generation_structuredlight_feature_v2.py
+which aims to generate structured light features
+4. rosrun visionbased_polishing visualization_all_features_v2.py
+which aims to visualize all image features
+5. rosrun visionbased_polishing visionbased_polishingcontroller_v6.py
+
+
+The debug process doesn't work so well
+
+
+fd=[A,B,C], B and C is not the right direction for polishing operation 
+
+
+
+
+
+
+
+
+
+
+
+

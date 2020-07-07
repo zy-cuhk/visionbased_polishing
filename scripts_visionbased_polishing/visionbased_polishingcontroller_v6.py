@@ -16,14 +16,14 @@ from geometry_msgs.msg import WrenchStamped,TwistStamped
 from ur5_planning.msg import uv
 from math import *
 
-o_path="/data/ros/yue_ws_201903/src/visionbased_polishing"
+o_path="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing"
 sys.path.append(o_path) 
 
 import scripts_arm.frompitoangle
 from scripts_arm.ur5_kinematics import Kinematic
 from scripts_arm.hand_in_eye import *
 from scripts_arm.trans_methods import *
-from scripts_arm.get_arpose_from_ar import *
+# from scripts_arm.get_arpose_from_ar import *
 from scripts_arm.ur5_pose_get import *
 from scripts_arm.uv_sub_node import *
 from scripts_arm.structure_point_xdydzd_sub import *
@@ -43,7 +43,7 @@ class VisonControl():
         self.vel=0.1
         self.urt=0
 
-        self.detat=0.05 #float(1.0/ratet)
+        self.detat=float(1.0/ratet)
         self.file=open(self.califilename)
         self.yamldata=yaml.load(self.file)
         self.f = 0.6245768 #self.yamldata['focal_length']
@@ -111,47 +111,57 @@ class VisonControl():
         force_list = self.netf_reader.ave_netf_force_data
         # force_list = np.array([0.0,0.0,0.0])
         netf=[force_list[0],force_list[1],force_list[2]]
+        # print("netf is:",netf)
 
-        q_now = self.ur_reader.ave_ur_pose
+        q_now = self.ur_reader.now_ur_pos
+        print("q_now is:",q_now)
         # if len(sturucture_point_xnow)!=0 and len(sturucture_point_ynow)!=0 and len(sturucture_point_anow)!=0:
         #     if len(structure_point_xdsr)!=0 and len(structure_point_ydsr)!=0:
         
-        joint_speed,vcc=self.get_joint_speed(sturucture_point_xyanow,structure_point_xyadsr, q_now, netf)
+        joint_speed,vcc=self.get_joint_speed1(sturucture_point_xyanow,structure_point_xyadsr, q_now, netf)
+        deta_joint_angle=float(self.detat)*numpy.array(joint_speed)
+        print "the deta joints angle are:", deta_joint_angle
+        q_pub_next=[]
+        for i in range(len(deta_joint_angle.tolist())):
+            q_pub_next.append(deta_joint_angle.tolist()[i][0]+q_now[i])
 
-        detaangle = self.get_deta_joint_angle(sturucture_point_xyanow, structure_point_xyadsr, q_now, netf)
-        # print "the deta joints angle are:", detaangle
-        
-        q_pub_next = self.get_joint_angle(q_now,detaangle)
-        # print "the published joints angle are:",q_pub_next
+        print "the published joints angle are:",q_pub_next
 
         ss = "movej([" + str(q_pub_next[0]) + "," + str(q_pub_next[1]) + "," + str(q_pub_next[2]) + "," + str(
             q_pub_next[3]) + "," + str(q_pub_next[4]) + "," + str(q_pub_next[5]) + "]," + "a=" + str(self.ace) + "," + "v=" + str(
             self.vel) + "," + "t=" + str(self.urt) + ")"
         # print("ur5 move joints",ss)
         self.ur_pub.publish(ss)                    
-                    
+
 
     def get_joint_speed(self,sturucture_point_xyanow,structure_point_xyadsr,q,f):
         Jacabian_joint,T_06=self.get_jacabian_from_joint(self.urdfname,q,0)
+        #print("Jacabian_joint is",Jacabian_joint)
         X=self.get_ur_X()
+        print("X is",X)
         jac = tr2jac(X,1)
+        # print("jac is",jac)
         jac_b2e=tr2jac(T_06,0)
+        # print("jac_b2e is",jac_b2e)
+        print("jac is:",jac)
         inv_X_jac = jac.I
-        
-        lamdaf=[0.001/2,0.001/2,0.001/2]
+        print("inv_X_jac is",inv_X_jac)
+        lamdaf=[0.0,0.0,0.0001]
         lamdaf_matrix=numpy.matrix([lamdaf[0],0,0,0,lamdaf[1],0,0,0,lamdaf[2]]).reshape((3,3))
         lamdas=[1.0,1.0,-0.01]
         lamdas_matrix=numpy.matrix([lamdas[0],0,0,0,lamdas[1],0,0,0,lamdas[2]]).reshape((3,3))
         
-        fd=[0.0,0.0,0.0]
+        fd=[0.0,0.0,-10.0]
+        print("fd is",fd)
         detaf = [f[0]-fd[0],f[1]-fd[1],f[2]-fd[2]]
+        print("detaf",detaf)
         detas=self.get_feature_error_xyz(sturucture_point_xyanow,structure_point_xyadsr)
         # print("sturucture_point_xyanow",sturucture_point_xyanow)
         # print("structure_point_xyadsr",structure_point_xyadsr)
         # print("detas",detas)
-        print("f",f)
-        print("fd",fd)
-        print("detaf",detaf)
+        # print("f",f)
+        # print("fd",fd)
+        # print("detaf",detaf)
 
         # vc1=lamdas_matrix*numpy.matrix(detas).T
         vc1=0.0
@@ -161,6 +171,7 @@ class VisonControl():
         # print "the camera velocity in camera frame is:",vcc
 
         ee_speed_in_eeframe = np.dot(inv_X_jac, numpy.matrix(vcc).T)
+        
         v_list = ee_speed_in_eeframe.reshape((1, 6)).tolist()[0]
         flag_list = [1, 1, 1, 0, 0, 0]
         vdot_z = [1.0 * v_list[i] * flag_list[i] for i in range(6)]
@@ -199,19 +210,36 @@ class VisonControl():
 
         return j_speed,vcc
     
-    def get_deta_joint_angle(self,sturucture_point_xyanow,structure_point_xyadsr,q,f):
-        j_speed,Vcc=self.get_joint_speed(sturucture_point_xyanow,structure_point_xyadsr,q,f)
-        # print("joint speed is:",j_speed)
-        deta_joint_angle=float(self.detat)*numpy.array(j_speed)
-        # print("deta_joint_angle is:",deta_joint_angle)
-        return deta_joint_angle
 
+    def get_joint_speed1(self,sturucture_point_xyanow,structure_point_xyadsr,q,f):
+        print("f is",f)
+        Jacabian_joint,T_06=self.get_jacabian_from_joint(self.urdfname,q,0)
+        print("Jacabian_joint is",Jacabian_joint)
+        print("T_06 is:",T_06)
+        jac_b2e=tr2jac(T_06,0)
 
-    def get_joint_angle(self,qnow,detajoint):
-        q_next=[]
-        for i in range(len(detajoint.tolist())):
-            q_next.append(detajoint.tolist()[i][0]+qnow[i])
-        return q_next
+        lamdaf=[0.000,0.000,0.0001]
+        lamdaf_matrix=numpy.matrix([lamdaf[0],0,0,0,lamdaf[1],0,0,0,lamdaf[2]]).reshape((3,3))
+        
+        fd=[0.0,0.0,-10.0]
+        print("fd is",fd)
+        detaf = [f[0]-fd[0],f[1]-fd[1],f[2]-fd[2]]
+        print("detaf",detaf)
+
+        vc=lamdaf_matrix*numpy.matrix(detaf).T
+        vcc=[vc.tolist()[0][0],vc.tolist()[1][0],vc.tolist()[2][0],0,0,0]
+
+        ee_speed_in_eeframe = numpy.matrix(vcc).T
+        print("ee_speed_in_eeframe is",ee_speed_in_eeframe)
+
+        v_list = ee_speed_in_eeframe.reshape((1, 6)).tolist()[0]
+        flag_list = [1, 1, 1, 0, 0, 0]
+        vdot_z = [1.0 * v_list[i] * flag_list[i] for i in range(6)]
+
+        ee_speed_in_base = np.dot(jac_b2e.I, numpy.mat(vdot_z).T)
+        j_speed=numpy.dot(Jacabian_joint.I,ee_speed_in_base)
+
+        return j_speed,vcc
 
     def get_feature_error_xyz(self,sturucture_point_xyanow,structure_point_xyadsr):
         deta_x=sturucture_point_xyanow[0]-structure_point_xyadsr[0]
@@ -225,16 +253,12 @@ class VisonControl():
         y=(uv[1]-self.centra_uv[1])/self.ky
         return x,y
 
-
     def get_jacabian_from_joint(self,urdfname,jointq,flag):
         robot = URDF.from_xml_file(urdfname)
-        tree = kdl_tree_from_urdf_model(robot)
-        chain = tree.getChain("base_link", "ee_link")
-        kdl_kin = KDLKinematics(robot, "base_link", "ee_link")
+        kdl_kin = KDLKinematics(robot, "base_link", "tool0")
         J = kdl_kin.jacobian(jointq)
         pose = kdl_kin.forward(jointq)   
         return J,pose
-
 
     """obtain feature error"""
     def get_feature_error(self,desireuv,nowuv):
@@ -252,8 +276,8 @@ def main():
     ratet=5
     rate = rospy.Rate(ratet)                
 
-    urdfname="/data/ros/yue_ws_201903/src/visionbased_polishing/urdf/ur5.urdf"
-    filename="/data/ros/yue_ws_201903/src/tcst_pkg/yaml/cam_300_industry_20200518.yaml"
+    urdfname="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing/urdf/ur5.urdf"
+    filename="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing/yaml/cam_300_industry_20200518.yaml"
     visionbased_polishing=VisonControl(filename,urdfname,ratet)
 
     while not rospy.is_shutdown():
@@ -266,3 +290,26 @@ def main():
 
 if __name__=="__main__":
     main()
+
+
+
+    # detaangle = self.get_deta_joint_angle(sturucture_point_xyanow, structure_point_xyadsr, q_now, netf)
+    # q_pub_next = self.get_joint_angle(q_now,detaangle)
+
+    # def get_deta_joint_angle(self,sturucture_point_xyanow,structure_point_xyadsr,q,f):
+    #     j_speed,Vcc=self.get_joint_speed(sturucture_point_xyanow,structure_point_xyadsr,q,f)
+    #     # print("joint speed is:",j_speed)
+    #     deta_joint_angle=float(self.detat)*numpy.array(j_speed)
+    #     # print("deta_joint_angle is:",deta_joint_angle)
+    #     return deta_joint_angle
+    # def get_joint_angle(self,qnow,detajoint):
+    #     q_next=[]
+    #     for i in range(len(detajoint.tolist())):
+    #         q_next.append(detajoint.tolist()[i][0]+qnow[i])
+    #     return q_next
+
+
+
+
+
+

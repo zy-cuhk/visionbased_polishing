@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 import time,sys
 import rospy
-from ar_track_alvar_msgs.msg import AlvarMarkers
+# from ar_track_alvar_msgs.msg import AlvarMarkers
 from std_msgs.msg import Float64
 import math
 import yaml,os,sys
 
-o_path="/data/ros/yue_ws_201903/src/visionbased_polishing"
-sys.path.append(o_path) 
+# o_path="/data/ros/yue_ws_201903/src/visionbased_polishing"
+# sys.path.append(o_path) 
 
 from visionbased_polishing.msg import uv
 
@@ -18,7 +18,7 @@ class Sturecuturexdydzdpub():
         self.udot=-3
         self.vdot=-3
 
-        self.califilename="/data/ros/yue_ws_201903/src/tcst_pkg/yaml/cam_300_industry_20200518.yaml"
+        self.califilename="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing/yaml/cam_300_industry_20200518.yaml"
         self.file=open(self.califilename)
         self.yamldata=yaml.load(self.file)
         self.f = 0.6245768 #self.yamldata['focal_length'] 
@@ -72,8 +72,9 @@ class Sturecuturexdydzdpub():
         x,y = self.change_uv_to_cartisian(uv_info)
         self.xd_pub.publish(x)
         self.yd_pub.publish(y)
-        print "x y  is:",x,y
-        print "uv info is:", uv_info[0], uv_info[1]
+        print "desired x y  is:",x,y
+        print "desired uv info is:", uv_info[0], uv_info[1]
+        rospy.logerr("desired uv info is: %s"%str(uv_info))
 
 def main():
     rospy.init_node("generation_desired_paths")

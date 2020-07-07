@@ -1,0 +1,15 @@
+<launch>
+    <!-- start ur5    /-->
+    <!-- <include file="$(find ur_modern_driver)/launch/ur5_bringup.launch"> 
+        <arg name="limited" value="true" />
+        <arg name="robot_ip" value="192.168.1.22" />
+    </include> -->
+
+    <node pkg="visionbased_polishing" type="generation_desiredpath_feature.py" name="generation_desiredpath_feature" output="screen" >
+    </node>
+    <node pkg="visionbased_polishing" type="generation_structuredlight_feature_v2.py" name="generation_structuredlight_feature_v2" output="screen" >
+    </node>
+    <node pkg="visionbased_polishing" type="visualization_all_features_v2.py" name="visualization_all_features_v2" output="screen" >
+    </node>
+
+</launch>

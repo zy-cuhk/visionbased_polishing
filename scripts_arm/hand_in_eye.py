@@ -153,7 +153,7 @@ def get_X_from_ar_quaternion(ar_info):
         rot = ar_info[3:6]
         s = ar_info[6]
         q0 = Q.quaternion(s, np.mat(rot))
-        print "q02R--------\n",q0.r()
+        # print "q02R--------\n",q0.r()
         # print q0.r()
         T_part1 = np.column_stack((q0.r(), transition_L))
         # print T_part1
