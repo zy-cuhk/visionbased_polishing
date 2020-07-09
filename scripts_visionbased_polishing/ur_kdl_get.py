@@ -253,11 +253,16 @@ class VisonControl():
         y=(uv[1]-self.centra_uv[1])/self.ky
         return x,y
 
-    def get_jacabian_from_joint(self,urdfname,jointq,flag):
+    def get_jacabian_from_joint(self,urdfname):
         robot = URDF.from_xml_file(urdfname)
+        # print("hello")
         kdl_kin = KDLKinematics(robot, "base_link", "tool0")
+        # print("ok")
+        jointq=self.ur_reader.now_ur_pos
         J = kdl_kin.jacobian(jointq)
+        print("jointq is:",jointq)
         pose = kdl_kin.forward(jointq)   
+        print("pose is:",pose)
         return J,pose
 
     """obtain feature error"""
@@ -283,7 +288,7 @@ def main():
     while not rospy.is_shutdown():
     # for i in range(1,100):
         try:
-            visionbased_polishing.visionbased_impedancecontroller()
+            visionbased_polishing.get_jacabian_from_joint(urdfname)
             rate.sleep()
         except:
             continue

@@ -86,8 +86,8 @@ class StructurePointxnynanRead():
             blurred = cv2.GaussianBlur(gray, (11,11), 0)
 
             hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)  # 将读取的BGR转换为HSV
-            lower = np.array([35, 43, 46])  # 所要检测的像素范围
-            upper = np.array([77, 255, 255])  # 此处检测绿色区域
+            lower = np.array([90, 43, 20])  # 所要检测的像素范围
+            upper = np.array([150, 255, 255])  # 此处检测绿色区域
             mask = cv2.inRange(hsv, lowerb=lower, upperb=upper)
             cv2.imshow("mask", mask)
 
