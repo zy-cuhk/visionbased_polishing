@@ -131,75 +131,49 @@ class VisonControl():
             q_pub_next[3]) + "," + str(q_pub_next[4]) + "," + str(q_pub_next[5]) + "]," + "a=" + str(self.ace) + "," + "v=" + str(
             self.vel) + "," + "t=" + str(self.urt) + ")"
         # print("ur5 move joints",ss)
-        # self.ur_pub.publish(ss)                    
+        self.ur_pub.publish(ss)                    
 
 
     def get_joint_speed(self,sturucture_point_xyanow,structure_point_xyadsr,q,f):
-        Jacabian_joint,T_06=self.get_jacabian_from_joint(self.urdfname,q,0)
-        #print("Jacabian_joint is",Jacabian_joint)
-        X=self.get_ur_X()
-        print("X is",X)
-        jac = tr2jac(X,1)
-        # print("jac is",jac)
-        jac_b2e=tr2jac(T_06,0)
-        # print("jac_b2e is",jac_b2e)
-        print("jac is:",jac)
-        inv_X_jac = jac.I
-        print("inv_X_jac is",inv_X_jac)
+
+        lamdas=[-1.0,-1.0,0]
+        lamdas_matrix=numpy.matrix([lamdas[0],0,0,0,lamdas[1],0,0,0,lamdas[2]]).reshape((3,3))
+        detas=self.get_feature_error_xyz(sturucture_point_xyanow,structure_point_xyadsr)
+        # vc1=lamdas_matrix*numpy.matrix(detas).T
+        vc1=0.0        
+
         lamdaf=[0.0,0.0,0.0001]
         lamdaf_matrix=numpy.matrix([lamdaf[0],0,0,0,lamdaf[1],0,0,0,lamdaf[2]]).reshape((3,3))
-        lamdas=[1.0,1.0,-0.01]
-        lamdas_matrix=numpy.matrix([lamdas[0],0,0,0,lamdas[1],0,0,0,lamdas[2]]).reshape((3,3))
-        
         fd=[0.0,0.0,-10.0]
         print("fd is",fd)
         detaf = [f[0]-fd[0],f[1]-fd[1],f[2]-fd[2]]
         print("detaf",detaf)
-        detas=self.get_feature_error_xyz(sturucture_point_xyanow,structure_point_xyadsr)
-        # print("sturucture_point_xyanow",sturucture_point_xyanow)
-        # print("structure_point_xyadsr",structure_point_xyadsr)
-        # print("detas",detas)
-        # print("f",f)
-        # print("fd",fd)
-        # print("detaf",detaf)
-
-        # vc1=lamdas_matrix*numpy.matrix(detas).T
-        vc1=0.0
         vc2=lamdaf_matrix*numpy.matrix(detaf).T
+
         vc=vc1+vc2
         vcc=[vc.tolist()[0][0],vc.tolist()[1][0],vc.tolist()[2][0],0,0,0]
         # print "the camera velocity in camera frame is:",vcc
 
+        X=numpy.array([[0.0,1.0,0.0,0.0],[-1.0,0.0,0.0,+0.12],[0.0,0.0,1.0,+0.09],[0.0,0.0,0.0,1.0]])
+        print("X is",X)
+        jac = tr2jac(X,1)
+        print("jac is:",jac)
+        inv_X_jac = jac.I
+        print("inv_X_jac is",inv_X_jac)
+
         ee_speed_in_eeframe = np.dot(inv_X_jac, numpy.matrix(vcc).T)
-        
         v_list = ee_speed_in_eeframe.reshape((1, 6)).tolist()[0]
         flag_list = [1, 1, 1, 0, 0, 0]
         vdot_z = [1.0 * v_list[i] * flag_list[i] for i in range(6)]
         # print "the end effector velocity in end effector frame", vdot_z
 
+        Jacabian_joint,T_06=self.get_jacabian_from_joint(self.urdfname,q,0)
+        #print("Jacabian_joint is",Jacabian_joint)
+        jac_b2e=tr2jac(T_06,0)
+        # print("jac_b2e is",jac_b2e)
         ee_speed_in_base = np.dot(jac_b2e.I, numpy.mat(vdot_z).T)
         j_speed=numpy.dot(Jacabian_joint.I,ee_speed_in_base)
         # print "joints speed are:",j_speed
-
-        # self.x_error_pub.publish(detas[0])
-        # self.y_error_pub.publish(detas[1])
-        # self.z_error_pub.publish(detas[2])    
-
-        # self.x_detaff_pub.publish(detaf[0])
-        # self.y_detaff_pub.publish(detaf[1])
-        # self.z_detaff_pub.publish(detaf[2])
-
-        # self.x_detaffl_pub.publish(lamdaf[0]/lamdas[0]*detaf[0])
-        # self.y_detaffl_pub.publish(lamdaf[1]/lamdas[1]*detaf[1])
-        # self.z_detaffl_pub.publish(lamdaf[2]/lamdas[2]*detaf[2])
-
-        # x_impedance_error = self.tool_get.Ur_tool_velocity_buf[-1][0] - vcc[0]
-        # y_impedance_error = self.tool_get.Ur_tool_velocity_buf[-1][1] - vcc[1]
-        # z_impedance_error = self.tool_get.Ur_tool_velocity_buf[-1][2] - vcc[2]
-        # print("x_impedance_error",x_impedance_error)
-        # self.x_impedance_error_pub.publish(x_impedance_error)
-        # self.y_impedance_error_pub.publish(y_impedance_error)
-        # self.z_impedance_error_pub.publish(z_impedance_error)
 
         detas1=detas[:]
         # print("detas1:",detas)
@@ -230,6 +204,7 @@ class VisonControl():
 
         ee_speed_in_eeframe = numpy.matrix(vcc).T
         print("ee_speed_in_eeframe is",ee_speed_in_eeframe)
+        lamdaf_matrix=numpy.matrix([lamdaf[0],0,0,0,lamdaf[1],0,0,0,lamdaf[2]]).reshape((3,3))
 
         v_list = ee_speed_in_eeframe.reshape((1, 6)).tolist()[0]
         flag_list = [1, 1, 1, 0, 0, 0]
@@ -308,6 +283,28 @@ if __name__=="__main__":
     #     return q_next
 
 
+    ## the below is the unused code:
+
+
+    # self.x_error_pub.publish(detas[0])
+    # self.y_error_pub.publish(detas[1])
+    # self.z_error_pub.publish(detas[2])    
+
+    # self.x_detaff_pub.publish(detaf[0])
+    # self.y_detaff_pub.publish(detaf[1])
+    # self.z_detaff_pub.publish(detaf[2])
+
+    # self.x_detaffl_pub.publish(lamdaf[0]/lamdas[0]*detaf[0])
+    # self.y_detaffl_pub.publish(lamdaf[1]/lamdas[1]*detaf[1])
+    # self.z_detaffl_pub.publish(lamdaf[2]/lamdas[2]*detaf[2])
+
+    # x_impedance_error = self.tool_get.Ur_tool_velocity_buf[-1][0] - vcc[0]
+    # y_impedance_error = self.tool_get.Ur_tool_velocity_buf[-1][1] - vcc[1]
+    # z_impedance_error = self.tool_get.Ur_tool_velocity_buf[-1][2] - vcc[2]
+    # print("x_impedance_error",x_impedance_error)
+    # self.x_impedance_error_pub.publish(x_impedance_error)
+    # self.y_impedance_error_pub.publish(y_impedance_error)
+    # self.z_impedance_error_pub.publish(z_impedance_error)
 
 
 
