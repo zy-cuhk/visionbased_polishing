@@ -62,6 +62,13 @@ class StructurePointxnynanRead():
         area2 = np.sqrt(p2 * (p2 - dis_12) * (p2 - dis_23) * (p2 - dis_13))
         return (area1 + area2) / 2
 
+
+    def change_uv_to_cartisian(self,point1):
+        x=(point1[0]-self.centra_uv[0])*(self.pu/self.f)
+        y=(point1[1]-self.centra_uv[1])*(self.pv/self.f)
+        return x,y
+
+
     def get_xnynzn(self,centroid_point,area_inrealtime):
         z_inrealtime=self.z_dstar*math.sqrt(self.a_dstar/area_inrealtime)
         xg,yg=self.change_uv_to_cartisian(centroid_point)
@@ -69,11 +76,24 @@ class StructurePointxnynanRead():
         y_inrealtime=yg*z_inrealtime
         return x_inrealtime,y_inrealtime,z_inrealtime
 
-    def change_uv_to_cartisian(self,point1):
-        x=(point1[0]-self.centra_uv[0])*(self.pu/self.f)
-        y=(point1[1]-self.centra_uv[1])*(self.pv/self.f)
-        return x,y
+
+    def centroid_computation(points):
+        points1=points.reshape(4,2)
+        # print("points1 is:",points1)
+        # print("points number is:",len(points1))
+        sum_x=0
+        sum_y=0
+        for i in range(len(points1)):
+            sum_x+=points1[i,0]
+            sum_y+=points1[i,1]
+        cx=int(sum_x/len(points1))
+        cy=int(sum_y/len(points1))
+        now_central = (cx, cy)
+        return now_central
     
+
+    
+
     def process_rgb_image(self,image):
         if image is not None:
             "image processing"
@@ -85,18 +105,9 @@ class StructurePointxnynanRead():
             eroded1 = cv2.erode(dilated1,kernel1)
             blurred = cv2.GaussianBlur(gray, (11,11), 0)
 
-            # hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)  # 将读取的BGR转换为HSV
-            # lower = np.array([90, 43, 20])  # 所要检测的像素范围
-            # upper = np.array([150, 255, 255])  # 此处检测绿色区域
-            # mask = cv2.inRange(hsv, lowerb=lower, upperb=upper)
-            # cv2.imshow("mask", mask)
-            # cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-
-
             thresh = cv2.threshold(blurred, 205, 255, cv2.THRESH_BINARY)[1]
             thresh = cv2.threshold(blurred, 190, 255, cv2.THRESH_BINARY)[1]
             cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-
 
             cnts = imutils.grab_contours(cnts)
             c = max(cnts, key=cv2.contourArea)
