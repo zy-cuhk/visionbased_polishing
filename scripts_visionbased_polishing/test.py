@@ -18,4 +18,7 @@ b=[]
 b.append(int(a[0]))
 b.append(int(a[1]))
 b=tuple(b)
-print(b)
+# print(b)
+a1=[]
+b1=[]
+b1.append(a1[0])

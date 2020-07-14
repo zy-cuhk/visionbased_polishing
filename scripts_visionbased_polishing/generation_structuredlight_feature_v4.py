@@ -19,9 +19,9 @@ class StructurePointxnynanRead():
         self.rgb_image=None
         self.auv=uv()
         self.image_sub = rospy.Subscriber("/usb_cam/image_raw", Image, self.callback)
+        
         self.uv_pub=rospy.Publisher("/camera_uv/uv_now", uv, queue_size=10)
         self.uv_area_pub = rospy.Publisher("/camera_uv/uv_area_now", Float64, queue_size=10)
-
         self.uv_leftpoint_pub=rospy.Publisher("/camera_uv/uv_leftpoint", uv, queue_size=10)
         self.uv_rightpoint_pub=rospy.Publisher("/camera_uv/uv_rightpoint", uv, queue_size=10)
         self.uv_toppoint_pub=rospy.Publisher("/camera_uv/uv_toppoint", uv, queue_size=10)

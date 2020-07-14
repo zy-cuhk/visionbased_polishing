@@ -5,11 +5,11 @@
         <arg name="robot_ip" value="192.168.1.22" />
     </include> -->
 
-    <node pkg="visionbased_polishing" type="generation_desiredpath_feature.py" name="generation_desiredpath_feature" output="screen" >
+    <node pkg="visionbased_polishing" type="generation_desiredpath_feature_v2.py" name="generation_desiredpath_feature_v2" output="screen" >
     </node>
-    <node pkg="visionbased_polishing" type="generation_structuredlight_feature_v2.py" name="generation_structuredlight_feature_v2" output="screen" >
+    <node pkg="visionbased_polishing" type="generation_structuredlight_feature_v4.py" name="generation_structuredlight_feature_v4" output="screen" >
     </node>
-    <node pkg="visionbased_polishing" type="visualization_all_features_v2.py" name="visualization_all_features_v2" output="screen" >
+    <node pkg="visionbased_polishing" type="visualization_all_features_v3.py" name="visualization_all_features_v3" output="screen" >
     </node>
 
 </launch>

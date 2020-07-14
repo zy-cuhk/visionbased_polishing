@@ -13,20 +13,18 @@ from std_msgs.msg import String
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
 from geometry_msgs.msg import WrenchStamped,TwistStamped
-from ur5_planning.msg import uv
 from math import *
+from visionbased_polishing.msg import uv
+
 
 o_path="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing"
 sys.path.append(o_path) 
 
 import scripts_arm.frompitoangle
 from scripts_arm.ur5_kinematics import Kinematic
-from scripts_arm.hand_in_eye import *
 from scripts_arm.trans_methods import *
 from scripts_arm.ur5_pose_get import *
 from scripts_arm.uv_sub_node import *
-from scripts_arm.structure_point_xdydzd_sub import *
-from scripts_arm.structure_point_xnynan_sub import *
 from scripts_arm.impedance_netf_data_get import *
 from scripts_arm.ur_tool_velocity_sub import *
 
@@ -55,13 +53,20 @@ class VisonControl():
         self.ur_sub = rospy.Subscriber("/joint_states", JointState, self.ur_reader.callback)
         self.tool_get=UrToolVelocityRead()
         self.tool_velocity_sub=rospy.Subscriber("/tool_velocity", TwistStamped, self.tool_get.Ur_tool_velocity_callback)
-        self.ur_pub = rospy.Publisher("/ur_driver/URScript", String, queue_size=10)
         self.netf_reader = NetfData()
         self.netf_sub = rospy.Subscriber("/robotiq_ft_wrench", WrenchStamped, self.netf_reader.callback)
 
-        # self.uv_get=UVRead()
-        # self.uv_sub=rospy.Subscriber("/camera_uv/uvlist", uv,self.uv_get.callback)
+        self.design_uv = []
+        self.now_uv = []
+        self.now_uvarea = []
+        self.design_uvarea = [1000.0]
+
+        self.uv_desire_sub = rospy.Subscriber("/camera_uv/uv_desire", uv, self.callback_desire_uv)
+        self.uv_now_sub = rospy.Subscriber("/camera_uv/uv_now", uv, self.callback_now_uv)
+        self.uv_area_sub = rospy.Subscriber("/camera_uv/uv_area_now", Float64, self.callback_now_uvarea)
         
+        self.ur_pub = rospy.Publisher("/ur_driver/URScript", String, queue_size=10)
+
         self.x_error_pub = rospy.Publisher("/feature_x_error", Float64, queue_size=10)
         self.y_error_pub = rospy.Publisher("/feature_y_error", Float64, queue_size=10)
         self.z_error_pub = rospy.Publisher("/feature_z_error", Float64, queue_size=10)
@@ -70,91 +75,101 @@ class VisonControl():
         self.y_impedance_error_pub = rospy.Publisher("/y_impedance_error_info", Float64, queue_size=10)
         self.z_impedance_error_pub = rospy.Publisher("/z_impedance_error_info", Float64, queue_size=10)
 
+    def callback_desire_uv(self, msg):
+        self.design_uv=[]
+        self.design_uv.append(int(msg.uvinfo[0]))
+        self.design_uv.append(int(msg.uvinfo[1]))
+
+    def callback_now_uv(self, msg):
+        self.now_uv=[]
+        self.now_uv.append(int(msg.uvinfo[0]))
+        self.now_uv.append(int(msg.uvinfo[1]))
+
+    def callback_now_uvarea(self,msg):
+        self.now_uvarea = []
+        self.now_uvarea.append(msg.data)
+
     def visionbased_impedancecontroller(self):
-        "step 1: receiving the data"
-        sturucture_point_xyanow=[sturucture_point_xnow[-1],sturucture_point_ynow[-1],sturucture_point_anow[-1]]
-        # print "sturucture_point_xyanow",sturucture_point_xyanow
-        structure_point_xyadsr=[structure_point_xdsr[-1],structure_point_ydsr[-1],structure_point_adsr[-1]]
-        # print "structure_point_xyadsr",structure_point_xyadsr
+        "step 1: receiving the data, u v area are the input, then transformed into xy in image plane"
+        if len(self.now_uv)!=0 and len(self.now_uvarea)!=0:
+            uvanow=[self.now_uv[0],self.now_uv[1],self.now_uvarea[0]]
+        else:
+            uvanow=[]
+        print "uvanow",uvanow
+        if len(self.design_uv)!=0 and len(self.design_uv)!=0:
+            uvadsr=[self.design_uv[0],self.design_uv[1],self.design_uvarea[0]]
+        else:
+            uvadsr=[]
+        print "uvadsr",uvadsr
         force_list = self.netf_reader.ave_netf_force_data
-        f=[force_list[0],force_list[1],force_list[2]]
-        print("netf is:",f)
+        if len(force_list)!=0:
+            f=[force_list[0],force_list[1],force_list[2]]
+        else:
+            f=[]
+        print("force is:",f)
         q_now = self.ur_reader.now_ur_pos
         print("q_now is:",q_now)
-        
-        "step 2: vision based controller"
-        lamdas=[-1.0,-1.0,0]
-        lamdas_matrix=numpy.matrix([lamdas[0],0,0,0,lamdas[1],0,0,0,lamdas[2]]).reshape((3,3))
-        deta_x=sturucture_point_xyanow[0]-structure_point_xyadsr[0]
-        deta_y=sturucture_point_xyanow[1]-structure_point_xyadsr[1]
-        deta_z=sturucture_point_xyanow[2]-structure_point_xyadsr[2]
-        detas= [deta_x,deta_y,deta_z]
-        # vc1=lamdas_matrix*numpy.matrix(detas).T
-        vc1=0.0        
 
-        lamdaf=[0.0,0.0,0.0001]
-        lamdaf_matrix=numpy.matrix([lamdaf[0],0,0,0,lamdaf[1],0,0,0,lamdaf[2]]).reshape((3,3))
-        fd=[0.0,0.0,-10.0]
-        print("fd is",fd)
-        detaf = [f[0]-fd[0],f[1]-fd[1],f[2]-fd[2]]
-        print("detaf",detaf)
-        vc2=lamdaf_matrix*numpy.matrix(detaf).T
 
-        vc=vc1+vc2
-        vcc=[vc.tolist()[0][0],vc.tolist()[1][0],vc.tolist()[2][0],0,0,0]
-        # print "the camera velocity in camera frame is:",vcc
+        if len(uvanow)!=0 and len(uvadsr)!=0 and len(f)!=0 and len(q_now)!=0:
+            "step 2: vision based controller"
+            lamdas=[-1.0,-1.0,0]
+            lamdas_matrix=numpy.matrix([lamdas[0],0,0,0,lamdas[1],0,0,0,lamdas[2]]).reshape((3,3))
+            deta_x=uvanow[0]-uvadsr[0]
+            deta_y=uvanow[1]-uvadsr[1]
+            deta_z=uvanow[2]-uvadsr[2]
+            detas=[deta_x,deta_y,deta_z]
+            # vc1=lamdas_matrix*numpy.matrix(detas).T
+            vc1=0.0        
 
-        X=numpy.array([[0.0,1.0,0.0,0.0],[-1.0,0.0,0.0,+0.12],[0.0,0.0,1.0,+0.09],[0.0,0.0,0.0,1.0]])
-        # print("X is",X)
-        jac = tr2jac(X,1)
-        # print("jac is:",jac)
-        inv_X_jac = jac.I
-        # print("inv_X_jac is",inv_X_jac)
-        ee_speed_in_eeframe = np.dot(inv_X_jac, numpy.matrix(vcc).T)
-        v_list = ee_speed_in_eeframe.reshape((1, 6)).tolist()[0]
-        flag_list = [1, 1, 1, 0, 0, 0]
-        vdot_z = [1.0 * v_list[i] * flag_list[i] for i in range(6)]
-        # print "the end effector velocity in end effector frame", vdot_z
+            lamdaf=[0.0,0.0,0.0001]
+            lamdaf_matrix=numpy.matrix([lamdaf[0],0,0,0,lamdaf[1],0,0,0,lamdaf[2]]).reshape((3,3))
+            fd=[0.0,0.0,-10.0]
+            print("fd is",fd)
+            detaf = [f[0]-fd[0],f[1]-fd[1],f[2]-fd[2]]
+            print("detaf",detaf)
+            vc2=lamdaf_matrix*numpy.matrix(detaf).T
 
-        robot = URDF.from_xml_file(urdfname)
-        kdl_kin = KDLKinematics(robot, "base_link", "tool0")
-        Jacabian_joint = kdl_kin.jacobian(jointq)
-        T_06 = kdl_kin.forward(jointq)   
-        #print("Jacabian_joint is",Jacabian_joint)
-        jac_b2e=tr2jac(T_06,0)
-        # print("jac_b2e is",jac_b2e)
-        ee_speed_in_base = np.dot(jac_b2e.I, numpy.mat(vdot_z).T)
-        j_speed=numpy.dot(Jacabian_joint.I,ee_speed_in_base)
-        # print "joints speed are:",j_speed
+            vc=vc1+vc2
+            vcc=[vc.tolist()[0][0],vc.tolist()[1][0],vc.tolist()[2][0],0,0,0]
+            # print "the camera velocity in camera frame is:",vcc
 
-        detas1=detas[:]
-        # print("detas1:",detas)
-        detas1[0]=detas1[0]*self.kx
-        detas1[1]=detas1[1]*self.ky
-        rospy.logerr("the image feature errors are:%s",str(numpy.matrix(detas1).T))
+            X=numpy.array([[0.0,1.0,0.0,0.0],[-1.0,0.0,0.0,+0.12],[0.0,0.0,1.0,+0.09],[0.0,0.0,0.0,1.0]])
+            # print("X is",X)
+            jac = tr2jac(X,1)
+            # print("jac is:",jac)
+            inv_X_jac = jac.I
+            # print("inv_X_jac is",inv_X_jac)
+            ee_speed_in_eeframe = np.dot(inv_X_jac, numpy.matrix(vcc).T)
+            v_list = ee_speed_in_eeframe.reshape((1, 6)).tolist()[0]
+            flag_list = [1, 1, 1, 0, 0, 0]
+            vdot_z = [1.0 * v_list[i] * flag_list[i] for i in range(6)]
+            # print "the end effector velocity in end effector frame", vdot_z
 
-        "step 3: output the data"
-        deta_joint_angle=float(self.detat)*numpy.array(joint_speed)
-        print "the deta joints angle are:", deta_joint_angle
-        q_pub_next=[]
-        for i in range(len(deta_joint_angle.tolist())):
-            q_pub_next.append(deta_joint_angle.tolist()[i][0]+q_now[i])
-        print "the published joints angle are:",q_pub_next
-        ss = "movej([" + str(q_pub_next[0]) + "," + str(q_pub_next[1]) + "," + str(q_pub_next[2]) + "," + str(
-            q_pub_next[3]) + "," + str(q_pub_next[4]) + "," + str(q_pub_next[5]) + "]," + "a=" + str(self.ace) + "," + "v=" + str(
-            self.vel) + "," + "t=" + str(self.urt) + ")"
-        # print("ur5 move joints",ss)
-        self.ur_pub.publish(ss)                    
-    
-    def change_uv_to_cartisian(self,uv):
-        x=(uv[0]-self.centra_uv[0])/self.kx
-        y=(uv[1]-self.centra_uv[1])/self.ky
-        return x,y
+            robot = URDF.from_xml_file(self.urdfname)
+            kdl_kin = KDLKinematics(robot, "base_link", "tool0")
+            Jacabian_joint = kdl_kin.jacobian(q_now)
+            T_06 = kdl_kin.forward(q_now)   
+            #print("Jacabian_joint is",Jacabian_joint)
+            jac_b2e=tr2jac(T_06,0)
+            # print("jac_b2e is",jac_b2e)
+            ee_speed_in_base = np.dot(jac_b2e.I, numpy.mat(vdot_z).T)
+            j_speed=numpy.dot(Jacabian_joint.I,ee_speed_in_base)
+            # print "joints speed are:",j_speed
 
-    def get_feature_error(self,desireuv,nowuv):
-        kk=numpy.mat(nowuv).T-numpy.mat(desireuv).T
-        return kk.reshape((1,2))
 
+            "step 3: output the data"
+            deta_joint_angle=float(self.detat)*numpy.array(joint_speed)
+            print "the deta joints angle are:", deta_joint_angle
+            q_pub_next=[]
+            for i in range(len(deta_joint_angle.tolist())):
+                q_pub_next.append(deta_joint_angle.tolist()[i][0]+q_now[i])
+            print "the published joints angle are:",q_pub_next
+            ss = "movej([" + str(q_pub_next[0]) + "," + str(q_pub_next[1]) + "," + str(q_pub_next[2]) + "," + str(
+                q_pub_next[3]) + "," + str(q_pub_next[4]) + "," + str(q_pub_next[5]) + "]," + "a=" + str(self.ace) + "," + "v=" + str(
+                self.vel) + "," + "t=" + str(self.urt) + ")"
+            # print("ur5 move joints",ss)
+            # self.ur_pub.publish(ss)                    
 
 
 def main():
