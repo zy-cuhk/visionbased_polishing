@@ -4,12 +4,12 @@
 import rospy
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
-from sensor_msgs.msg import Image
-from std_msgs.msg import Float64
 import imutils
 import time,math
 import numpy as np
 import yaml,os,sys
+from sensor_msgs.msg import Image
+from std_msgs.msg import Float64
 
 class StructurePointxnynanRead():
     def __init__(self,z_dstar,a_dstar):
@@ -43,12 +43,10 @@ class StructurePointxnynanRead():
         except CvBridgeError as e:
             print(e)
 
-    "calculate Euler distance"
     def cal_distance(self,point1, point2):
         dis = np.sqrt(np.sum(np.square(point1[0] - point2[0]) + np.square(point1[1] - point2[1])))
         return dis
 
-    "calculate area based on helen formula"
     def helen_formula(self,coord):
         coord = np.array(coord).reshape((4, 2))
         dis_01 = self.cal_distance(coord[0], coord[1])
@@ -61,6 +59,92 @@ class StructurePointxnynanRead():
         area1 = np.sqrt(p1 * (p1 - dis_01) * (p1 - dis_30) * (p1 - dis_13))
         area2 = np.sqrt(p2 * (p2 - dis_12) * (p2 - dis_23) * (p2 - dis_13))
         return (area1 + area2) / 2
+
+    def centroid_computation(self,points):
+        points1=points.reshape(4,2)
+        sum_x=0
+        sum_y=0
+        for i in range(len(points1)):
+            sum_x+=points1[i,0]
+            sum_y+=points1[i,1]
+        cx=int(sum_x/len(points1))
+        cy=int(sum_y/len(points1))
+        now_central = (cx, cy)
+        return now_central
+
+
+    def image_process(self,img):
+        # cv2.namedWindow('image', cv2.WINDOW_NORMAL)
+
+        hsv=cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
+        lower_red=np.array([0,50,50])
+        upper_red=np.array([10,255,255])
+        mask=cv2.inRange(hsv,lower_red,upper_red)
+        res=cv2.bitwise_and(img,img,mask=mask)
+        mask1=mask.copy()
+        cnts = cv2.findContours(mask1, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        cnts = imutils.grab_contours(cnts)
+        cnts1=sorted(cnts,key=cv2.contourArea,reverse=True)
+        for i in range(len(cnts1)):
+            print("the area is:",cv2.contourArea(cnts1[i], True))
+        
+        # cv2.imshow('the captured video',img)
+        cv2.imshow("the mask",mask)
+        cv2.waitKey(8)
+        # cv2.imshow("the res",res)
+
+        print("the contour number is:",len(cnts1))
+        if len(cnts1)>=4:
+            points=[]
+            for i in range(0,4):
+                c=cnts1[i]
+                M = cv2.moments(c)
+                if M["m00"]!=0.0:
+                    cx= int(M["m10"] / M["m00"])
+                    cy = int(M["m01"] / M["m00"])
+                    now_central = (cx, cy)
+                    cv2.circle(img, now_central, 10, (0, 0, 255), -1)
+                    points.append(int(cx))
+                    points.append(int(cy))
+
+                    if len(points)==8:
+                        xlist=[]
+                        ylist=[]
+                        for i in range(len(points)/2):
+                            xlist.append(int(points[2*i]))
+                            ylist.append(int(points[2*i+1]))
+                        xmin_index=np.array(xlist).argmin()
+                        xmax_index=np.array(xlist).argmax()
+                        ymin_index=np.array(ylist).argmin()
+                        ymax_index=np.array(ylist).argmax()
+                        points=np.array(points).reshape(4,2)
+                        left_point=(points[xmin_index,0],points[xmin_index,1])
+                        right_point=(points[xmax_index,0],points[xmax_index,1])
+                        bot_point=(points[ymin_index,0],points[ymin_index,1])
+                        top_point=(points[ymax_index,0],points[ymax_index,1])
+                        cv2.line(img, left_point, top_point, [0, 255, 0], 2)
+                        cv2.line(img, left_point, bot_point, [0, 255, 0], 2)
+                        cv2.line(img, right_point, top_point, [0, 255, 0], 2)
+                        cv2.line(img, right_point, bot_point, [0, 255, 0], 2)
+                        now_central=self.centroid_computation(points)
+                        cv2.circle(img, now_central, 10, (0, 0, 255), -1)
+                        cv2.imshow('the captured video',img)
+                        cv2.waitKey(8)
+
+
+                        x0,y0=self.change_uv_to_cartisian(left_point)
+                        x1,y1=self.change_uv_to_cartisian(top_point)
+                        x2,y2=self.change_uv_to_cartisian(right_point)
+                        x3,y3=self.change_uv_to_cartisian(bot_point)
+                        area = self.helen_formula([x0,y0, x1,y1, x2,y2, x3,y3])
+                        x_inrealtime,y_inrealtime,z_inrealtime=self.get_xnynzn(now_central,area)
+                        
+                        self.cross_xn_pub.publish(x_inrealtime)
+                        self.cross_yn_pub.publish(y_inrealtime)
+                        self.cross_an_pub.publish(z_inrealtime)
+                        self.cross_area_pub.publish(area)
+                        print "real x,y,z,area is:",x_inrealtime,y_inrealtime,z_inrealtime, area
+                        rospy.logerr("real uv info is: %s"%str(now_central))
 
 
     def change_uv_to_cartisian(self,point1):
@@ -77,81 +161,6 @@ class StructurePointxnynanRead():
         return x_inrealtime,y_inrealtime,z_inrealtime
 
 
-    def centroid_computation(points):
-        points1=points.reshape(4,2)
-        # print("points1 is:",points1)
-        # print("points number is:",len(points1))
-        sum_x=0
-        sum_y=0
-        for i in range(len(points1)):
-            sum_x+=points1[i,0]
-            sum_y+=points1[i,1]
-        cx=int(sum_x/len(points1))
-        cy=int(sum_y/len(points1))
-        now_central = (cx, cy)
-        return now_central
-    
-
-    
-
-    def process_rgb_image(self,image):
-        if image is not None:
-            "image processing"
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            kernel1 = cv2.getStructuringElement(cv2.MORPH_RECT,(5, 5))
-            eroded1 = cv2.erode(gray,kernel1)
-            dilated1 = cv2.dilate(eroded1,kernel1)
-            dilated1 = cv2.dilate(dilated1,kernel1)
-            eroded1 = cv2.erode(dilated1,kernel1)
-            blurred = cv2.GaussianBlur(gray, (11,11), 0)
-
-            thresh = cv2.threshold(blurred, 205, 255, cv2.THRESH_BINARY)[1]
-            thresh = cv2.threshold(blurred, 190, 255, cv2.THRESH_BINARY)[1]
-            cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-
-            cnts = imutils.grab_contours(cnts)
-            c = max(cnts, key=cv2.contourArea)
-            "publish xn yn zn an"
-            extLeft = tuple(c[c[:, :, 0].argmin()][0])
-            extRight = tuple(c[c[:, :, 0].argmax()][0])
-            extTop = tuple(c[c[:, :, 1].argmin()][0])
-            extBot = tuple(c[c[:, :, 1].argmax()][0])
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            M = cv2.moments(c)
-            cX = int(M["m10"] / M["m00"])
-            cY = int(M["m01"] / M["m00"])
-            now_central = (cX, cY)
-            
-            x0,y0=self.change_uv_to_cartisian(extLeft)
-            x1,y1=self.change_uv_to_cartisian(extTop)
-            x2,y2=self.change_uv_to_cartisian(extRight)
-            x3,y3=self.change_uv_to_cartisian(extBot)
-            area = self.helen_formula([x0,y0, x1,y1, x2,y2, x3,y3])
-            x_inrealtime,y_inrealtime,z_inrealtime=self.get_xnynzn(now_central,area)
-            
-            self.cross_xn_pub.publish(x_inrealtime)
-            self.cross_yn_pub.publish(y_inrealtime)
-            self.cross_an_pub.publish(z_inrealtime)
-            self.cross_area_pub.publish(area)
-            print "real x,y,z,area is:",x_inrealtime,y_inrealtime,z_inrealtime, area
-            # print("real uv info is:",now_central)
-            rospy.logerr("real uv info is: %s"%str(now_central))
-
-            "show the windows"
-            cv2.line(image, extLeft, extTop, [0, 255, 0], 2)
-            cv2.line(image, extLeft, extBot, [0, 255, 0], 2)
-            cv2.line(image, extRight, extTop, [0, 255, 0], 2)
-            cv2.line(image, extRight, extBot, [0, 255, 0], 2)
-            cv2.drawContours(image, [c], -1, (0, 255, 255), 2)
-            cv2.circle(image, extLeft, 10, (0, 0, 255), -1)
-            cv2.circle(image, extRight, 10, (0, 0, 255), -1)
-            cv2.circle(image, extTop, 10, (0, 0, 255), -1)
-            cv2.circle(image, extBot, 10, (0, 0, 255), -1)
-            cv2.circle(image, now_central, 10, (0, 0, 255), -1)
-            cv2.namedWindow('central_frame', cv2.WINDOW_NORMAL)
-            cv2.imshow("central_frame", image)
-            cv2.waitKey(8)
-
 def main():
     try:
         rospy.init_node("Generation_image_feature")
@@ -160,10 +169,11 @@ def main():
         z_dstar=0.20
         a_dstar=0.0050
         Generation_image_feature=StructurePointxnynanRead(z_dstar,a_dstar)
-        rate = rospy.Rate(1)
+        rate = rospy.Rate(10)
         while not rospy.is_shutdown():
-            Generation_image_feature.process_rgb_image(Generation_image_feature.rgb_image)
-            rate.sleep()
+            if Generation_image_feature.rgb_image is not None:
+                Generation_image_feature.image_process(Generation_image_feature.rgb_image)
+                rate.sleep()
     except KeyboardInterrupt:
         print "Stopping generation image features node"
         cv2.destroyAllWindows()
