@@ -132,30 +132,30 @@ class VisonControl():
 
             vc=vc1+vc2
             vcc=[vc.tolist()[0][0],vc.tolist()[1][0],vc.tolist()[2][0],0,0,0]
-            # print "the camera velocity in camera frame is:",vcc
+            print "the camera velocity in camera frame is:",vcc
 
             X=numpy.array([[0.0,1.0,0.0,0.0],[-1.0,0.0,0.0,+0.12],[0.0,0.0,1.0,+0.09],[0.0,0.0,0.0,1.0]])
-            # print("X is",X)
+            print("X is",X)
             jac = tr2jac(X,1)
-            # print("jac is:",jac)
+            print("jac is:",jac)
             inv_X_jac = jac.I
-            # print("inv_X_jac is",inv_X_jac)
+            print("inv_X_jac is",inv_X_jac)
             ee_speed_in_eeframe = np.dot(inv_X_jac, numpy.matrix(vcc).T)
             v_list = ee_speed_in_eeframe.reshape((1, 6)).tolist()[0]
             flag_list = [1, 1, 1, 0, 0, 0]
             vdot_z = [1.0 * v_list[i] * flag_list[i] for i in range(6)]
-            # print "the end effector velocity in end effector frame", vdot_z
+            print "the end effector velocity in end effector frame", vdot_z
 
             robot = URDF.from_xml_file(self.urdfname)
             kdl_kin = KDLKinematics(robot, "base_link", "tool0")
             Jacabian_joint = kdl_kin.jacobian(q_now)
             T_06 = kdl_kin.forward(q_now)   
-            #print("Jacabian_joint is",Jacabian_joint)
+            print("Jacabian_joint is",Jacabian_joint)
             jac_b2e=tr2jac(T_06,0)
-            # print("jac_b2e is",jac_b2e)
+            print("jac_b2e is",jac_b2e)
             ee_speed_in_base = np.dot(jac_b2e.I, numpy.mat(vdot_z).T)
             j_speed=numpy.dot(Jacabian_joint.I,ee_speed_in_base)
-            # print "joints speed are:",j_speed
+            print "joints speed are:",j_speed
 
 
             "step 3: output the data"
@@ -169,7 +169,7 @@ class VisonControl():
                 q_pub_next[3]) + "," + str(q_pub_next[4]) + "," + str(q_pub_next[5]) + "]," + "a=" + str(self.ace) + "," + "v=" + str(
                 self.vel) + "," + "t=" + str(self.urt) + ")"
             # print("ur5 move joints",ss)
-            # self.ur_pub.publish(ss)                    
+            self.ur_pub.publish(ss)                    
 
 
 def main():

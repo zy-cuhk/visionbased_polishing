@@ -51,6 +51,8 @@ The debug process doesn't work so well
 fd=[A,B,C], B and C is not the right direction for polishing operation 
 
 
+## problem in 20200714:
+I cannot receive the joint data, some problem must happen
 
 
 
