@@ -114,7 +114,7 @@ class VisonControl():
 
         if len(uvanow)!=0 and len(uvadsr)!=0 and len(f)!=0 and len(q_now)!=0:
             "step 2: vision based controller"
-            lamdas=[-1.0,-1.0,0]
+            lamdas=[0.1,0.1,0]
             lamdas_matrix=numpy.matrix([lamdas[0],0,0,0,lamdas[1],0,0,0,lamdas[2]]).reshape((3,3))
             deta_u=uvanow[0]-uvadsr[0]
             deta_v=uvanow[1]-uvadsr[1]
@@ -138,7 +138,7 @@ class VisonControl():
 
             vc=vc1+vc2
             vcc=[vc.tolist()[0][0],vc.tolist()[1][0],vc.tolist()[2][0],0,0,0]
-            # print "the camera velocity in camera frame is:",vcc
+            print "the camera velocity in camera frame is:",vcc
 
             X=numpy.matrix([[0.0,1.0,0.0,0.0],[-1.0,0.0,0.0,+0.12],[0.0,0.0,1.0,+0.09],[0.0,0.0,0.0,1.0]])
             # print("X is",X)
