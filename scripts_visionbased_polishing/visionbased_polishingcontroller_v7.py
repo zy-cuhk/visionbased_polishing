@@ -16,7 +16,6 @@ from geometry_msgs.msg import WrenchStamped,TwistStamped
 from math import *
 from visionbased_polishing.msg import uv
 
-"modification part"
 
 # o_path="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing"
 o_path="/data/ros/yue_ws_201903/src/visionbased_polishing"
@@ -117,15 +116,16 @@ class VisonControl():
             "step 2: vision based controller"
             lamdas=[-1.0,-1.0,0]
             lamdas_matrix=numpy.matrix([lamdas[0],0,0,0,lamdas[1],0,0,0,lamdas[2]]).reshape((3,3))
-            deta_x=uvanow[0]-uvadsr[0]
-            deta_y=uvanow[1]-uvadsr[1]
-            deta_z=uvanow[2]-uvadsr[2]
+            deta_u=uvanow[0]-uvadsr[0]
+            deta_v=uvanow[1]-uvadsr[1]
+            deta_uvarea=uvanow[2]-uvadsr[2]
             "modification part"
 
-            detas=[deta_x,deta_y,deta_z]
-
-            # vc1=lamdas_matrix*numpy.matrix(detas).T
-            vc1=0.0        
+            detas=[deta_u,deta_v,deta_uvarea]
+            deta_cartesian=[detas[0]/self.kx,detas[1]/self.ky,0.0]
+            print("deta_cartesian is:",deta_cartesian)
+            vc1=lamdas_matrix*numpy.matrix(deta_cartesian).T
+            # vc1=0.0        
 
             lamdaf=[0.0,0.0,0.0001]
             lamdaf_matrix=numpy.matrix([lamdaf[0],0,0,0,lamdaf[1],0,0,0,lamdaf[2]]).reshape((3,3))
@@ -133,7 +133,8 @@ class VisonControl():
             # print("fd is",fd)
             detaf = [f[0]-fd[0],f[1]-fd[1],f[2]-fd[2]]
             print("detaf",detaf)
-            vc2=lamdaf_matrix*numpy.matrix(detaf).T
+            # vc2=lamdaf_matrix*numpy.matrix(detaf).T
+            vc2=0.0
 
             vc=vc1+vc2
             vcc=[vc.tolist()[0][0],vc.tolist()[1][0],vc.tolist()[2][0],0,0,0]
@@ -187,8 +188,6 @@ def main():
     rospy.init_node("visionbased_polishingcontroller")
     ratet=5
     rate = rospy.Rate(ratet)                
-
-    "modification part"
 
     # urdfname="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing/urdf/ur5.urdf"
     # filename="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing/yaml/cam_300_industry_20200518.yaml"
