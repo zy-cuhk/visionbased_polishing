@@ -18,7 +18,8 @@ from visionbased_polishing.msg import uv
 
 "modification part"
 
-o_path="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing"
+# o_path="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing"
+o_path="/data/ros/yue_ws_201903/src/visionbased_polishing"
 sys.path.append(o_path) 
 
 import scripts_arm.frompitoangle
@@ -96,12 +97,12 @@ class VisonControl():
             uvanow=[self.now_uv[0],self.now_uv[1],self.now_uvarea[0]]
         else:
             uvanow=[]
-        print "uvanow",uvanow
+        # print "uvanow",uvanow
         if len(self.design_uv)!=0 and len(self.design_uv)!=0:
             uvadsr=[self.design_uv[0],self.design_uv[1],self.design_uvarea[0]]
         else:
             uvadsr=[]
-        print "uvadsr",uvadsr
+        # print "uvadsr",uvadsr
         force_list = self.netf_reader.ave_netf_force_data
         if len(force_list)!=0:
             f=[force_list[0],force_list[1],force_list[2]]
@@ -129,21 +130,21 @@ class VisonControl():
             lamdaf=[0.0,0.0,0.0001]
             lamdaf_matrix=numpy.matrix([lamdaf[0],0,0,0,lamdaf[1],0,0,0,lamdaf[2]]).reshape((3,3))
             fd=[0.0,0.0,-10.0]
-            print("fd is",fd)
+            # print("fd is",fd)
             detaf = [f[0]-fd[0],f[1]-fd[1],f[2]-fd[2]]
             print("detaf",detaf)
             vc2=lamdaf_matrix*numpy.matrix(detaf).T
 
             vc=vc1+vc2
             vcc=[vc.tolist()[0][0],vc.tolist()[1][0],vc.tolist()[2][0],0,0,0]
-            print "the camera velocity in camera frame is:",vcc
+            # print "the camera velocity in camera frame is:",vcc
 
-            X=numpy.array([[0.0,1.0,0.0,0.0],[-1.0,0.0,0.0,+0.12],[0.0,0.0,1.0,+0.09],[0.0,0.0,0.0,1.0]])
-            print("X is",X)
+            X=numpy.matrix([[0.0,1.0,0.0,0.0],[-1.0,0.0,0.0,+0.12],[0.0,0.0,1.0,+0.09],[0.0,0.0,0.0,1.0]])
+            # print("X is",X)
             jac = tr2jac(X,1)
-            print("jac is:",jac)
+            # print("jac is:",jac)
             inv_X_jac = jac.I
-            print("inv_X_jac is",inv_X_jac)
+            # print("inv_X_jac is",inv_X_jac)
             ee_speed_in_eeframe = np.dot(inv_X_jac, numpy.matrix(vcc).T)
             v_list = ee_speed_in_eeframe.reshape((1, 6)).tolist()[0]
             flag_list = [1, 1, 1, 0, 0, 0]
@@ -154,16 +155,22 @@ class VisonControl():
             kdl_kin = KDLKinematics(robot, "base_link", "tool0")
             Jacabian_joint = kdl_kin.jacobian(q_now)
             T_06 = kdl_kin.forward(q_now)   
-            print("Jacabian_joint is",Jacabian_joint)
+            # print("Jacabian_joint is",Jacabian_joint)
             jac_b2e=tr2jac(T_06,0)
-            print("jac_b2e is",jac_b2e)
+            # print("jac_b2e is",jac_b2e)
             ee_speed_in_base = np.dot(jac_b2e.I, numpy.mat(vdot_z).T)
             j_speed=numpy.dot(Jacabian_joint.I,ee_speed_in_base)
             print "joints speed are:",j_speed
+            print "the type of joints speed is:",type(j_speed)
 
+            # j_speed1=[]
+            # for i in range(len(j_speed)):
+            #     j_speed1.append(j_speed[i,0])
+            # print "'j_speed1 is:", j_speed1
+            # deta_joint_angle=self.detat*j_speed1
 
             "step 3: output the data"
-            deta_joint_angle=float(self.detat)*numpy.array(joint_speed)
+            deta_joint_angle=float(self.detat)*numpy.array(j_speed)
             print "the deta joints angle are:", deta_joint_angle
             q_pub_next=[]
             for i in range(len(deta_joint_angle.tolist())):
@@ -183,10 +190,11 @@ def main():
 
     "modification part"
 
-    urdfname="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing/urdf/ur5.urdf"
-    filename="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing/yaml/cam_300_industry_20200518.yaml"
+    # urdfname="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing/urdf/ur5.urdf"
+    # filename="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing/yaml/cam_300_industry_20200518.yaml"
 
-
+    urdfname="/data/ros/yue_ws_201903/src/visionbased_polishing/urdf/ur5.urdf"
+    filename="/data/ros/yue_ws_201903/src/visionbased_polishing/yaml/cam_300_industry_20200518.yaml"
     visionbased_polishing=VisonControl(filename,urdfname,ratet)
 
     while not rospy.is_shutdown():
