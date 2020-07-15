@@ -16,6 +16,7 @@ from geometry_msgs.msg import WrenchStamped,TwistStamped
 from math import *
 from visionbased_polishing.msg import uv
 
+"modification part"
 
 o_path="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing"
 sys.path.append(o_path) 
@@ -118,7 +119,10 @@ class VisonControl():
             deta_x=uvanow[0]-uvadsr[0]
             deta_y=uvanow[1]-uvadsr[1]
             deta_z=uvanow[2]-uvadsr[2]
+            "modification part"
+
             detas=[deta_x,deta_y,deta_z]
+
             # vc1=lamdas_matrix*numpy.matrix(detas).T
             vc1=0.0        
 
@@ -177,8 +181,12 @@ def main():
     ratet=5
     rate = rospy.Rate(ratet)                
 
+    "modification part"
+
     urdfname="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing/urdf/ur5.urdf"
     filename="/home/zy/catkin_ws/src/polishingrobot_lx/visionbased_polishing/yaml/cam_300_industry_20200518.yaml"
+
+
     visionbased_polishing=VisonControl(filename,urdfname,ratet)
 
     while not rospy.is_shutdown():
