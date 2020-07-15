@@ -68,13 +68,17 @@ class VisonControl():
         
         self.ur_pub = rospy.Publisher("/ur_driver/URScript", String, queue_size=10)
 
-        self.x_error_pub = rospy.Publisher("/feature_x_error", Float64, queue_size=10)
-        self.y_error_pub = rospy.Publisher("/feature_y_error", Float64, queue_size=10)
-        self.z_error_pub = rospy.Publisher("/feature_z_error", Float64, queue_size=10)
+        self.x_error_pub = rospy.Publisher("/x_feature_error", Float64, queue_size=10)
+        self.y_error_pub = rospy.Publisher("/y_feature_error", Float64, queue_size=10)
+        self.z_error_pub = rospy.Publisher("/z_feature_error", Float64, queue_size=10)
         
-        self.x_impedance_error_pub = rospy.Publisher("/x_impedance_error_info", Float64, queue_size=10)
-        self.y_impedance_error_pub = rospy.Publisher("/y_impedance_error_info", Float64, queue_size=10)
-        self.z_impedance_error_pub = rospy.Publisher("/z_impedance_error_info", Float64, queue_size=10)
+        self.fx_error_pub = rospy.Publisher("/fx_error", Float64, queue_size=10)
+        self.fy_error_pub = rospy.Publisher("/fy_error", Float64, queue_size=10)
+        self.fz_error_pub = rospy.Publisher("/fz_error", Float64, queue_size=10)
+
+        self.x_impedance_error_pub = rospy.Publisher("/x_impedance_error", Float64, queue_size=10)
+        self.y_impedance_error_pub = rospy.Publisher("/y_impedance_error", Float64, queue_size=10)
+        self.z_impedance_error_pub = rospy.Publisher("/z_impedance_error", Float64, queue_size=10)
 
     def callback_desire_uv(self, msg):
         self.design_uv=[]
@@ -181,7 +185,23 @@ class VisonControl():
                 q_pub_next[3]) + "," + str(q_pub_next[4]) + "," + str(q_pub_next[5]) + "]," + "a=" + str(self.ace) + "," + "v=" + str(
                 self.vel) + "," + "t=" + str(self.urt) + ")"
             # print("ur5 move joints",ss)
-            self.ur_pub.publish(ss)                    
+            self.ur_pub.publish(ss)        
+
+            "step 4: publish datas for recording"
+            self.x_error_pub.publish(detas[0])
+            self.y_error_pub.publish(detas[1])
+            self.z_error_pub.publish(detas[2])
+
+            self.fx_error_pub.publish(detaf[0])
+            self.fy_error_pub.publish(detaf[1])
+            self.fz_error_pub.publish(detaf[2])
+
+            x_impedance_error = self.tool_get.Ur_tool_velocity_buf[-1][0] - vcc[0]
+            y_impedance_error = self.tool_get.Ur_tool_velocity_buf[-1][1] - vcc[1]
+            z_impedance_error = self.tool_get.Ur_tool_velocity_buf[-1][2] - vcc[2]
+            self.x_impedance_error_pub.publish(x_impedance_error)
+            self.y_impedance_error_pub.publish(y_impedance_error)
+            self.z_impedance_error_pub.publish(z_impedance_error)
 
 
 def main():

@@ -149,8 +149,9 @@ def main():
     try:
         rospy.init_node("Generation_image_feature")
         rospy.loginfo("Starting generation image features node")
+        ratet=5
+        rate = rospy.Rate(ratet)
         Generation_image_feature=StructurePointxnynanRead()
-        rate = rospy.Rate(1)
         while not rospy.is_shutdown():
             if Generation_image_feature.rgb_image is not None:
                 Generation_image_feature.image_process(Generation_image_feature.rgb_image)

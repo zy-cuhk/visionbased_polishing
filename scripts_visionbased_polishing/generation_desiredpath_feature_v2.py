@@ -46,17 +46,20 @@ class Sturecuturexdydzdpub():
 
 
 def main():
-    rospy.init_node("generation_desired_paths")
-    ratet=1
-    rate = rospy.Rate(ratet)
-    Generation_desired_path=Sturecuturexdydzdpub()
-    i=1
-    while not rospy.is_shutdown():
-        Generation_desired_path.generation_desired_paths(i)
-        i=i+1
-        if i==200:
-            i=1
-        rate.sleep()
+    try:
+        rospy.init_node("generation_desired_paths")
+        ratet=5
+        rate = rospy.Rate(ratet)
+        Generation_desired_path=Sturecuturexdydzdpub()
+        i=1
+        while not rospy.is_shutdown():
+            Generation_desired_path.generation_desired_paths(i)
+            i=i+1
+            if i==200:
+                i=1
+            rate.sleep()
+    except KeyboardInterrupt:
+        print "Stopping generation desired paths"
 if __name__=="__main__":
     main()
 
